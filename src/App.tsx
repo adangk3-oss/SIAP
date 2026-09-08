@@ -1417,37 +1417,81 @@ function RekapBulananPage() {
         </div>
       </div>
 
-      {/* Detail per day */}
+      {/* Detail per day - seperti tabel rekap harian */}
       <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
-        <div className="p-4 bg-green-50 border-b">
-          <h3 className="font-bold text-green-800">Detail Harian</h3>
+        <div className="p-4 bg-green-50 border-b flex items-center justify-between flex-wrap gap-2">
+          <h3 className="font-bold text-green-800">Detail Absensi Bulanan</h3>
+          <span className="text-xs text-gray-500">
+            {filteredPegawai.reduce((acc, p) => {
+              let count = 0;
+              for (let d = 1; d <= daysInMonth; d++) {
+                if (getAbsensiForDay(p.id, d)) count++;
+              }
+              return acc + count;
+            }, 0)} data absensi
+          </span>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-xs">
+          <table className="w-full">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-2 py-2 text-left sticky left-0 bg-gray-50">Nama</th>
-                {Array.from({ length: daysInMonth }, (_, i) => (
-                  <th key={i} className="px-1 py-2 text-center min-w-[30px]">{i + 1}</th>
-                ))}
+                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 sticky left-0 bg-gray-50">Tanggal</th>
+                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Nama</th>
+                <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700">Datang</th>
+                <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700">Izin Keluar</th>
+                <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700">Izin Masuk</th>
+                <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700">Pulang</th>
+                <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700">Keterangan</th>
               </tr>
             </thead>
             <tbody>
-              {filteredPegawai.map(p => (
-                <tr key={p.id} className="border-t">
-                  <td className="px-2 py-2 font-medium sticky left-0 bg-white whitespace-nowrap">{p.nama}</td>
-                  {Array.from({ length: daysInMonth }, (_, i) => {
-                    const record = getAbsensiForDay(p.id, i + 1);
-                    const date = new Date(year, month - 1, i + 1);
-                    const isWeekendDay = isWeekend(date);
-                    let bg = isWeekendDay ? 'bg-gray-100' : '';
-                    let text = isWeekendDay ? '🔵' : '-';
-                    if (record?.datang) { bg = 'bg-green-50'; text = '✅'; }
-                    if (record?.keteranganIzin) { bg = 'bg-yellow-50'; text = '📝'; }
-                    return <td key={i} className={`px-1 py-2 text-center ${bg}`}>{text}</td>;
-                  })}
-                </tr>
-              ))}
+              {(() => {
+                const rows: { date: string; record: AbsensiRecord; pegawai: Pegawai | undefined }[] = [];
+                for (let d = 1; d <= daysInMonth; d++) {
+                  const dateStr = `${selectedMonth}-${String(d).padStart(2, '0')}`;
+                  const date = new Date(year, month - 1, d);
+                  const isWeekendDay = isWeekend(date);
+                  filteredPegawai.forEach(p => {
+                    const record = absensi.find(a => a.pegawaiId === p.id && a.tanggal === dateStr);
+                    if (record || !isWeekendDay) {
+                      rows.push({ date: dateStr, record: record as AbsensiRecord, pegawai: p });
+                    }
+                  });
+                }
+                if (rows.length === 0) {
+                  return <tr><td colSpan={7} className="px-4 py-8 text-center text-gray-400">Belum ada data absensi</td></tr>;
+                }
+                let lastDate = '';
+                return rows.map((row, idx) => {
+                  const showDateRow = row.date !== lastDate;
+                  lastDate = row.date;
+                  const dateObj = parseISO(row.date);
+                  const isWeekendDay = isWeekend(dateObj);
+                  return (
+                    <React.Fragment key={idx}>
+                      {showDateRow && (
+                        <tr className={`${isWeekendDay ? 'bg-gray-100' : 'bg-blue-50'}`}>
+                          <td colSpan={7} className="px-4 py-2 text-sm font-bold text-blue-900">
+                            📅 {format(dateObj, 'EEEE, dd MMMM yyyy', { locale: idLocale })}
+                            {isWeekendDay && <span className="ml-2 text-xs text-gray-500">(Akhir Pekan)</span>}
+                          </td>
+                        </tr>
+                      )}
+                      <tr className="border-t hover:bg-gray-50">
+                        <td className="px-4 py-3 text-sm text-gray-500 sticky left-0 bg-white whitespace-nowrap">
+                          {format(dateObj, 'dd/MM')}
+                        </td>
+                        <td className="px-4 py-3 text-sm font-medium">{row.pegawai?.nama || '-'}</td>
+                        <td className="px-4 py-3 text-sm text-center text-green-600">{row.record?.datang || '-'}</td>
+                        <td className="px-4 py-3 text-sm text-center text-yellow-600">{row.record?.izinKeluar || '-'}</td>
+                        <td className="px-4 py-3 text-sm text-center text-purple-600">{row.record?.izinMasuk || '-'}</td>
+                        <td className="px-4 py-3 text-sm text-center text-blue-600">{row.record?.pulang || '-'}</td>
+                        <td className="px-4 py-3 text-sm text-center">{row.record?.keteranganIzin || '-'}</td>
+                      </tr>
+                    </React.Fragment>
+                  );
+                });
+              })()}
             </tbody>
           </table>
         </div>
