@@ -1244,6 +1244,151 @@ function RekapBulananPage() {
     a.click();
   };
 
+  const printDetailAbsensi = () => {
+    if (selectedPegawai === 'all' || !filteredPegawai[0]) return;
+    
+    const p = filteredPegawai[0];
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    let tableRows = '';
+    let hadirCount = 0, izinCount = 0, alphaCount = 0;
+    
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dateStr = `${selectedMonth}-${String(d).padStart(2, '0')}`;
+      const date = new Date(year, month - 1, d);
+      const isWeekendDay = isWeekend(date);
+      const record = absensi.find(a => a.pegawaiId === p.id && a.tanggal === dateStr);
+      
+      if (!isWeekendDay) {
+        if (record?.datang) hadirCount++;
+        else if (record?.keteranganIzin) izinCount++;
+        else alphaCount++;
+      }
+      
+      tableRows += `
+        <tr${isWeekendDay ? ' style="background-color:#f3f4f6"' : ''}>
+          <td style="font-weight:${isWeekendDay ? 'bold' : 'normal'}">${format(date, 'EEEE, dd MMMM yyyy', { locale: idLocale })}${isWeekendDay ? ' <span style="color:#ef4444;font-size:9pt">(Akhir Pekan)</span>' : ''}</td>
+          <td style="text-align:center;color:#16a34a;font-weight:bold">${record?.datang || '-'}</td>
+          <td style="text-align:center;color:#ca8a04">${record?.izinKeluar || '-'}</td>
+          <td style="text-align:center;color:#9333ea">${record?.izinMasuk || '-'}</td>
+          <td style="text-align:center;color:#2563eb;font-weight:bold">${record?.pulang || '-'}</td>
+          <td style="text-align:center">${record?.keteranganIzin || '-'}</td>
+        </tr>
+      `;
+    }
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Detail Absensi - ${p.nama}</title>
+          <style>
+            @page { size: A4; margin: 1.5cm; }
+            body { font-family: 'Times New Roman', serif; font-size: 11pt; }
+            .header { text-align: center; margin-bottom: 20px; }
+            .header h1 { font-size: 14pt; margin: 0; }
+            .header h2 { font-size: 12pt; margin: 5px 0; }
+            .header p { font-size: 10pt; margin: 2px 0; }
+            .pegawai-info { margin: 15px 0; padding: 10px; border: 1px solid #333; background: #f9fafb; }
+            .pegawai-info table { width: 100%; }
+            .pegawai-info td { padding: 3px 0; }
+            .title { text-align: center; margin: 15px 0; font-size: 12pt; font-weight: bold; }
+            table.absensi { width: 100%; border-collapse: collapse; margin: 15px 0; }
+            table.absensi th, table.absensi td { border: 1px solid #333; padding: 6px 8px; font-size: 10pt; }
+            table.absensi th { background: #1e40af; color: white; text-align: center; }
+            .summary { margin: 20px 0; padding: 10px; border: 1px solid #333; background: #eff6ff; }
+            .summary table { width: 100%; }
+            .summary td { padding: 5px; text-align: center; }
+            .summary .label { font-weight: bold; }
+            .signatures { display: flex; justify-content: space-between; margin-top: 40px; }
+            .sig-block { text-align: center; width: 45%; }
+            .sig-block .name { margin-top: 60px; font-weight: bold; text-decoration: underline; }
+            .sig-block .nip { font-size: 10pt; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>${settings.identitasSekolah.nama}</h1>
+            <p>${settings.identitasSekolah.alamat}</p>
+            <p>NPSN: ${settings.identitasSekolah.npsn}</p>
+          </div>
+          
+          <div class="pegawai-info">
+            <table>
+              <tr>
+                <td style="width:100px"><strong>Nama</strong></td>
+                <td>: ${p.nama}</td>
+              </tr>
+              <tr>
+                <td><strong>NIP</strong></td>
+                <td>: ${p.nip}</td>
+              </tr>
+              <tr>
+                <td><strong>Jabatan</strong></td>
+                <td>: ${p.jabatan}</td>
+              </tr>
+              <tr>
+                <td><strong>Bulan</strong></td>
+                <td>: ${format(parseISO(selectedMonth + '-01'), 'MMMM yyyy', { locale: idLocale })}</td>
+              </tr>
+            </table>
+          </div>
+          
+          <div class="title">
+            DETAIL ABSENSI PEGAWAI
+          </div>
+          
+          <table class="absensi">
+            <thead>
+              <tr>
+                <th style="width:30%">Tanggal</th>
+                <th style="width:12%">Datang</th>
+                <th style="width:14%">Izin Keluar</th>
+                <th style="width:14%">Izin Masuk</th>
+                <th style="width:12%">Pulang</th>
+                <th style="width:18%">Keterangan</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${tableRows}
+            </tbody>
+          </table>
+          
+          <div class="summary">
+            <table>
+              <tr>
+                <td class="label">Total Hadir:</td>
+                <td style="color:#16a34a;font-weight:bold;font-size:14pt">${hadirCount} hari</td>
+                <td class="label">Total Izin:</td>
+                <td style="color:#ca8a04;font-weight:bold;font-size:14pt">${izinCount} hari</td>
+                <td class="label">Total Alpha:</td>
+                <td style="color:#dc2626;font-weight:bold;font-size:14pt">${alphaCount} hari</td>
+              </tr>
+            </table>
+          </div>
+          
+          <div class="signatures">
+            <div class="sig-block">
+              <p>Mengetahui,</p>
+              <p>${settings.kepalaSekolah.jabatan}</p>
+              <p class="name">${settings.kepalaSekolah.nama}</p>
+              <p class="nip">NIP. ${settings.kepalaSekolah.nip}</p>
+            </div>
+            <div class="sig-block">
+              <p>Bandung, ${format(new Date(), 'dd MMMM yyyy', { locale: idLocale })}</p>
+              <p>${p.jabatan}</p>
+              <p class="name">${p.nama}</p>
+              <p class="nip">NIP. ${p.nip}</p>
+            </div>
+          </div>
+          
+          <script>window.onload = () => { window.print(); }</script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
+
   const printRekap = () => {
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
@@ -1432,15 +1577,20 @@ function RekapBulananPage() {
             <h3 className="font-bold text-green-800">
               Detail Absensi Bulanan - {filteredPegawai[0]?.nama}
             </h3>
-            <span className="text-xs text-gray-500">
-              {(() => {
-                let count = 0;
-                for (let d = 1; d <= daysInMonth; d++) {
-                  if (getAbsensiForDay(filteredPegawai[0]?.id || '', d)) count++;
-                }
-                return count;
-              })()} data absensi
-            </span>
+            <div className="flex items-center gap-3">
+              <span className="text-xs text-gray-500">
+                {(() => {
+                  let count = 0;
+                  for (let d = 1; d <= daysInMonth; d++) {
+                    if (getAbsensiForDay(filteredPegawai[0]?.id || '', d)) count++;
+                  }
+                  return count;
+                })()} data absensi
+              </span>
+              <button onClick={printDetailAbsensi} className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm flex items-center gap-2">
+                🖨️ Cetak Detail
+              </button>
+            </div>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full">
