@@ -1,10 +1,37 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { store } from './store';
 import { User, Pegawai, AbsensiRecord, Settings, DailyActivity } from './types';
 import { QRCodeSVG } from 'qrcode.react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isWeekend, parseISO } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
 import * as XLSX from 'xlsx';
+import JsBarcode from 'jsbarcode';
+
+// ============ BARCODE COMPONENT ============
+function BarcodeDisplay({ value, width = 1.5, height = 40, fontSize = 10, showText = true }: { value: string; width?: number; height?: number; fontSize?: number; showText?: boolean }) {
+  const svgRef = useRef<SVGSVGElement>(null);
+
+  useEffect(() => {
+    if (svgRef.current && value) {
+      try {
+        JsBarcode(svgRef.current, value, {
+          format: 'CODE128',
+          width: width,
+          height: height,
+          displayValue: showText,
+          fontSize: fontSize,
+          margin: 2,
+          background: '#ffffff',
+          lineColor: '#000000'
+        });
+      } catch (e) {
+        // fallback if barcode generation fails
+      }
+    }
+  }, [value, width, height, fontSize, showText]);
+
+  return <svg ref={svgRef} />;
+}
 
 // ============ AUTH CONTEXT ============
 function App() {
@@ -538,6 +565,7 @@ function PegawaiPage() {
   const [editItem, setEditItem] = useState<Pegawai | null>(null);
   const [form, setForm] = useState({ nama: '', nip: '', jabatan: '', idAbsen: '' });
   const [showCard, setShowCard] = useState<Pegawai | null>(null);
+  const [previewBarcode, setPreviewBarcode] = useState<Pegawai | null>(null);
 
   const refresh = () => setPegawai(store.getPegawai());
 
@@ -567,10 +595,32 @@ function PegawaiPage() {
     }
   };
 
+  const generateBarcodeSVG = (value: string): string => {
+    // Generate barcode SVG string using JsBarcode
+    const canvas = document.createElement('canvas');
+    try {
+      JsBarcode(canvas, value, {
+        format: 'CODE128',
+        width: 1.5,
+        height: 50,
+        displayValue: true,
+        fontSize: 12,
+        margin: 5,
+        background: '#ffffff',
+        lineColor: '#000000'
+      });
+      return canvas.toDataURL('image/png');
+    } catch (e) {
+      return '';
+    }
+  };
+
   const printCard = (p: Pegawai) => {
     const settings = store.getSettings();
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
+
+    const barcodeDataUrl = generateBarcodeSVG(p.idAbsen);
     
     printWindow.document.write(`
       <html>
@@ -597,7 +647,8 @@ function PegawaiPage() {
             .info { text-align: center; font-size: 7pt; }
             .info p { margin: 2px 0; }
             .info .name { font-weight: bold; font-size: 8pt; }
-            .barcode { margin-top: 4px; }
+            .barcode { margin-top: 4px; text-align: center; }
+            .barcode img { max-width: 100%; height: auto; }
             .footer { font-size: 5pt; text-align: center; color: #666; }
           </style>
         </head>
@@ -615,16 +666,86 @@ function PegawaiPage() {
               <p>ID: ${p.idAbsen}</p>
             </div>
             <div class="barcode">
-              <svg xmlns="http://www.w3.org/2000/svg" width="120" height="120">
-                <rect width="120" height="120" fill="white"/>
-                <text x="60" y="60" text-anchor="middle" font-size="8" fill="#333">${p.idAbsen}</text>
-              </svg>
+              ${barcodeDataUrl ? `<img src="${barcodeDataUrl}" alt="Barcode ${p.idAbsen}" />` : `<p>${p.idAbsen}</p>`}
             </div>
             <div class="footer">
               <p>ID Absen: ${p.idAbsen}</p>
             </div>
           </div>
-          <script>window.onload = () => { window.print(); }</script>
+          <script>window.onload = () => { setTimeout(() => { window.print(); }, 500); }</script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
+
+  const printAllCards = () => {
+    const settings = store.getSettings();
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    const cardsHtml = pegawai.map(p => {
+      const barcodeDataUrl = generateBarcodeSVG(p.idAbsen);
+      return `
+        <div class="card">
+          <div class="header">
+            <h3>${settings.identitasSekolah.nama}</h3>
+            <p>Kartu Pegawai</p>
+          </div>
+          <div class="photo">${p.nama.charAt(0)}</div>
+          <div class="info">
+            <p class="name">${p.nama}</p>
+            <p>NIP: ${p.nip}</p>
+            <p>Jabatan: ${p.jabatan}</p>
+            <p>ID: ${p.idAbsen}</p>
+          </div>
+          <div class="barcode">
+            ${barcodeDataUrl ? `<img src="${barcodeDataUrl}" alt="Barcode ${p.idAbsen}" />` : `<p>${p.idAbsen}</p>`}
+          </div>
+          <div class="footer">
+            <p>ID Absen: ${p.idAbsen}</p>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Kartu Pegawai - ${settings.identitasSekolah.nama}</title>
+          <style>
+            @page { size: A4; margin: 1cm; }
+            body { margin: 0; padding: 0; font-family: Arial, sans-serif; }
+            .cards-container { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+            .card { 
+              width: 6cm; height: 9cm; 
+              border: 2px solid #1e40af; 
+              border-radius: 8px;
+              padding: 8px;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              justify-content: space-between;
+              box-sizing: border-box;
+              background: linear-gradient(135deg, #eff6ff, #dbeafe);
+              page-break-inside: avoid;
+            }
+            .header { text-align: center; font-size: 7pt; }
+            .header h3 { margin: 0; font-size: 8pt; color: #1e40af; }
+            .photo { width: 40px; height: 40px; background: #1e40af; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 16pt; font-weight: bold; }
+            .info { text-align: center; font-size: 7pt; }
+            .info p { margin: 2px 0; }
+            .info .name { font-weight: bold; font-size: 8pt; }
+            .barcode { margin-top: 4px; text-align: center; }
+            .barcode img { max-width: 100%; height: auto; }
+            .footer { font-size: 5pt; text-align: center; color: #666; }
+          </style>
+        </head>
+        <body>
+          <div class="cards-container">
+            ${cardsHtml}
+          </div>
+          <script>window.onload = () => { setTimeout(() => { window.print(); }, 1000); }</script>
         </body>
       </html>
     `);
@@ -633,12 +754,20 @@ function PegawaiPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <h2 className="text-2xl font-bold text-gray-800">👥 Data Pegawai</h2>
-        <button onClick={() => { setShowForm(true); setEditItem(null); setForm({ nama: '', nip: '', jabatan: '', idAbsen: '' }); }}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 font-medium">
-          + Tambah Pegawai
-        </button>
+        <div className="flex gap-2">
+          {pegawai.length > 0 && (
+            <button onClick={printAllCards}
+              className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 font-medium text-sm">
+              🖨️ Cetak Semua Kartu
+            </button>
+          )}
+          <button onClick={() => { setShowForm(true); setEditItem(null); setForm({ nama: '', nip: '', jabatan: '', idAbsen: '' }); }}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 font-medium">
+            + Tambah Pegawai
+          </button>
+        </div>
       </div>
 
       {showForm && (
@@ -687,6 +816,7 @@ function PegawaiPage() {
                 <th className="px-4 py-3 text-left text-sm font-semibold text-blue-800">NIP</th>
                 <th className="px-4 py-3 text-left text-sm font-semibold text-blue-800">Jabatan</th>
                 <th className="px-4 py-3 text-left text-sm font-semibold text-blue-800">ID Absen</th>
+                <th className="px-4 py-3 text-center text-sm font-semibold text-blue-800">Barcode</th>
                 <th className="px-4 py-3 text-center text-sm font-semibold text-blue-800">Aksi</th>
               </tr>
             </thead>
@@ -699,7 +829,15 @@ function PegawaiPage() {
                   <td className="px-4 py-3 text-sm">{p.jabatan}</td>
                   <td className="px-4 py-3 text-sm font-mono">{p.idAbsen}</td>
                   <td className="px-4 py-3 text-center">
-                    <div className="flex items-center justify-center gap-2">
+                    <div className="flex justify-center">
+                      <BarcodeDisplay value={p.idAbsen} width={1.2} height={30} fontSize={8} showText={true} />
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-center">
+                    <div className="flex items-center justify-center gap-2 flex-wrap">
+                      <button onClick={() => setPreviewBarcode(p)} className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs hover:bg-blue-200" title="Preview Barcode">
+                        👁️ Preview
+                      </button>
                       <button onClick={() => printCard(p)} className="px-2 py-1 bg-green-100 text-green-700 rounded text-xs hover:bg-green-200" title="Cetak Kartu">
                         🖨️ Kartu
                       </button>
@@ -714,12 +852,43 @@ function PegawaiPage() {
                 </tr>
               ))}
               {pegawai.length === 0 && (
-                <tr><td colSpan={6} className="px-4 py-8 text-center text-gray-400">Belum ada data pegawai</td></tr>
+                <tr><td colSpan={7} className="px-4 py-8 text-center text-gray-400">Belum ada data pegawai</td></tr>
               )}
             </tbody>
           </table>
         </div>
       </div>
+
+      {/* Preview Barcode Modal */}
+      {previewBarcode && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-gray-800">Preview Barcode</h3>
+              <button onClick={() => setPreviewBarcode(null)} className="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+            </div>
+            <div className="text-center space-y-3">
+              <div className="bg-blue-50 rounded-lg p-4">
+                <p className="font-bold text-blue-800 text-lg">{previewBarcode.nama}</p>
+                <p className="text-sm text-gray-600">NIP: {previewBarcode.nip}</p>
+                <p className="text-sm text-gray-600">{previewBarcode.jabatan}</p>
+              </div>
+              <div className="bg-white border-2 border-blue-200 rounded-lg p-4 flex justify-center">
+                <BarcodeDisplay value={previewBarcode.idAbsen} width={2} height={60} fontSize={14} showText={true} />
+              </div>
+              <p className="text-sm text-gray-500">ID Absen: <span className="font-mono font-bold">{previewBarcode.idAbsen}</span></p>
+              <div className="flex gap-2 justify-center pt-2">
+                <button onClick={() => { printCard(previewBarcode); }} className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 text-sm">
+                  🖨️ Cetak Kartu
+                </button>
+                <button onClick={() => setPreviewBarcode(null)} className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 text-sm">
+                  Tutup
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
