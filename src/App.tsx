@@ -1460,7 +1460,9 @@ function RekapBulananPage() {
 function UserManagementPage() {
   const [users, setUsers] = useState<User[]>(store.getUsers());
   const [showForm, setShowForm] = useState(false);
+  const [editUser, setEditUser] = useState<User | null>(null);
   const [form, setForm] = useState({ username: '', password: '', name: '', role: 'user' as User['role'] });
+  const [editForm, setEditForm] = useState({ username: '', password: '', name: '', role: 'user' as User['role'] });
 
   const refresh = () => setUsers(store.getUsers());
 
@@ -1470,6 +1472,21 @@ function UserManagementPage() {
     refresh();
     setShowForm(false);
     setForm({ username: '', password: '', name: '', role: 'user' });
+  };
+
+  const handleEdit = (user: User) => {
+    setEditUser(user);
+    setEditForm({ username: user.username, password: user.password, name: user.name, role: user.role });
+  };
+
+  const handleEditSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (editUser) {
+      store.updateUser({ ...editUser, ...editForm });
+      refresh();
+      setEditUser(null);
+      setEditForm({ username: '', password: '', name: '', role: 'user' });
+    }
   };
 
   const handleDelete = (id: string) => {
@@ -1524,6 +1541,42 @@ function UserManagementPage() {
         </div>
       )}
 
+      {editUser && (
+        <div className="bg-white rounded-xl shadow-sm border p-5">
+          <h3 className="font-bold text-gray-800 mb-4">✏️ Edit User - {editUser.name}</h3>
+          <form onSubmit={handleEditSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Nama Lengkap</label>
+              <input type="text" value={editForm.name} onChange={e => setEditForm({...editForm, name: e.target.value})} required
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Username</label>
+              <input type="text" value={editForm.username} onChange={e => setEditForm({...editForm, username: e.target.value})} required
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+              <input type="password" value={editForm.password} onChange={e => setEditForm({...editForm, password: e.target.value})} required
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
+              <select value={editForm.role} onChange={e => setEditForm({...editForm, role: e.target.value as User['role']})}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                <option value="admin">Admin</option>
+                <option value="operator">Operator</option>
+                <option value="user">User</option>
+              </select>
+            </div>
+            <div className="md:col-span-2 flex gap-3">
+              <button type="submit" className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700">Update</button>
+              <button type="button" onClick={() => { setEditUser(null); setEditForm({ username: '', password: '', name: '', role: 'user' }); }} className="bg-gray-200 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-300">Batal</button>
+            </div>
+          </form>
+        </div>
+      )}
+
       <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
         <table className="w-full">
           <thead className="bg-blue-50">
@@ -1547,9 +1600,14 @@ function UserManagementPage() {
                   </span>
                 </td>
                 <td className="px-4 py-3 text-center">
-                  <button onClick={() => handleDelete(u.id)} className="px-2 py-1 bg-red-100 text-red-700 rounded text-xs hover:bg-red-200">
-                    🗑️ Hapus
-                  </button>
+                  <div className="flex items-center justify-center gap-2">
+                    <button onClick={() => handleEdit(u)} className="px-2 py-1 bg-yellow-100 text-yellow-700 rounded text-xs hover:bg-yellow-200">
+                      ✏️ Edit
+                    </button>
+                    <button onClick={() => handleDelete(u.id)} className="px-2 py-1 bg-red-100 text-red-700 rounded text-xs hover:bg-red-200">
+                      🗑️ Hapus
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}

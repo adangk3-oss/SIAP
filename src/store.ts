@@ -52,6 +52,15 @@ export const store = {
     const users = store.getUsers().filter(u => u.id !== id);
     store.setUsers(users);
   },
+  updateUser: (user: User) => {
+    const users = store.getUsers().map(u => u.id === user.id ? user : u);
+    store.setUsers(users);
+    // Update currentUser jika user yang diedit adalah user yang sedang login
+    const currentUser = store.getCurrentUser();
+    if (currentUser && currentUser.id === user.id) {
+      store.setCurrentUser(user);
+    }
+  },
 
   // Pegawai
   getPegawai: (): Pegawai[] => getItem('pegawai', []),
