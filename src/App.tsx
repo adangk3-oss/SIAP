@@ -2020,22 +2020,31 @@ function PengaturanPage() {
             {/* Kalender Bulanan */}
             <div className="bg-green-50 border border-green-200 rounded-lg p-4">
               <h4 className="font-semibold text-green-900 mb-3">📆 Pengaturan Khusus per Bulan</h4>
-              <p className="text-sm text-gray-600 mb-4">Atur hari libur khusus atau hari kerja tambahan untuk bulan tertentu (misal: libur nasional, cuti bersama)</p>
+              <p className="text-sm text-gray-600 mb-4">Atur hari libur khusus atau hari kerja tambahan untuk bulan tertentu (misal: libur nasional, cuti bersama). Klik tanggal untuk toggle status.</p>
               <input type="month" value={selectedMonthHari} onChange={e => setSelectedMonthHari(e.target.value)}
                 className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 mb-4" />
               <div className="grid grid-cols-7 gap-2">
                 {['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'].map(d => (
-                  <div key={d} className="text-center text-xs font-bold text-gray-500 py-1">{d}</div>
+                  <div key={d} className={`text-center text-xs font-bold py-1 ${d === 'Min' || d === 'Sab' ? 'text-red-500' : 'text-gray-500'}`}>{d}</div>
                 ))}
                 {Array.from({ length: daysInMonth }, (_, i) => {
                   const date = new Date(year, month - 1, i + 1);
                   const dateStr = `${selectedMonthHari}-${String(i + 1).padStart(2, '0')}`;
-                  const isWeekendDay = isWeekend(date);
                   const dayOfWeek = date.getDay(); // 0 = Minggu, 1 = Senin, ..., 6 = Sabtu
-                  const weekdayKey = `weekday_${dayOfWeek === 0 ? 7 : dayOfWeek}`; // Konversi: Minggu=7, Senin=1, ..., Jumat=5, Sabtu=6
+                  const isWeekendDay = dayOfWeek === 0 || dayOfWeek === 6; // Hanya Sabtu (6) dan Minggu (0)
+                  
+                  // Konversi dayOfWeek ke weekdayKey: Minggu=7, Senin=1, ..., Jumat=5, Sabtu=6
+                  const weekdayKey = `weekday_${dayOfWeek === 0 ? 7 : dayOfWeek}`;
                   const isDefaultWorkingDay = settings.hariKerja[weekdayKey] !== false;
+                  
+                  // Cek apakah ada override khusus untuk tanggal ini
                   const isOverridden = settings.hariKerja[dateStr] !== undefined;
-                  const isOff = isOverridden ? settings.hariKerja[dateStr] === false : !isDefaultWorkingDay;
+                  const isOff = isOverridden 
+                    ? settings.hariKerja[dateStr] === false 
+                    : (isWeekendDay ? true : !isDefaultWorkingDay);
+                  
+                  const dayNames = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
+                  const dayName = dayNames[dayOfWeek];
                   
                   return (
                     <button 
@@ -2049,8 +2058,10 @@ function PengaturanPage() {
                             ? 'bg-red-100 text-red-700 border-2 border-red-300 hover:bg-red-200' 
                             : 'bg-green-50 text-green-700 border-2 border-green-200 hover:bg-green-100'
                       }`}
+                      title={`${dayName}, ${i + 1} ${format(date, 'MMMM yyyy', { locale: idLocale })}`}
                     >
-                      {i + 1}
+                      <div className="text-xs font-bold">{i + 1}</div>
+                      <div className="text-[9px] opacity-75">{dayName}</div>
                       {isOverridden && !isWeekendDay && (
                         <span className="absolute top-0 right-0 w-2 h-2 bg-blue-500 rounded-full"></span>
                       )}
@@ -2061,7 +2072,7 @@ function PengaturanPage() {
               <div className="mt-4 flex flex-wrap gap-4 text-xs">
                 <div className="flex items-center gap-2">
                   <div className="w-4 h-4 bg-green-50 border-2 border-green-200 rounded"></div>
-                  <span className="text-gray-600">Hari Kerja</span>
+                  <span className="text-gray-600">Hari Kerja (Sen-Jum)</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-4 h-4 bg-red-100 border-2 border-red-300 rounded"></div>
@@ -2069,7 +2080,7 @@ function PengaturanPage() {
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-4 h-4 bg-gray-200 rounded"></div>
-                  <span className="text-gray-600">Weekend (Otomatis Libur)</span>
+                  <span className="text-gray-600">Sabtu & Minggu (Otomatis Libur)</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
