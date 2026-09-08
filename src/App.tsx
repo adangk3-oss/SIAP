@@ -5,32 +5,21 @@ import { QRCodeSVG } from 'qrcode.react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isWeekend, parseISO } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
 import * as XLSX from 'xlsx';
-import JsBarcode from 'jsbarcode';
+import { jsPDF } from 'jspdf';
+import QRCode from 'qrcode';
 
-// ============ BARCODE COMPONENT ============
-function BarcodeDisplay({ value, width = 1.5, height = 40, fontSize = 10, showText = true }: { value: string; width?: number; height?: number; fontSize?: number; showText?: boolean }) {
-  const svgRef = useRef<SVGSVGElement>(null);
-
-  useEffect(() => {
-    if (svgRef.current && value) {
-      try {
-        JsBarcode(svgRef.current, value, {
-          format: 'CODE128',
-          width: width,
-          height: height,
-          displayValue: showText,
-          fontSize: fontSize,
-          margin: 2,
-          background: '#ffffff',
-          lineColor: '#000000'
-        });
-      } catch (e) {
-        // fallback if barcode generation fails
-      }
-    }
-  }, [value, width, height, fontSize, showText]);
-
-  return <svg ref={svgRef} />;
+// ============ QR CODE COMPONENT ============
+function QRCodeDisplay({ value, size = 80, level = 'H' }: { value: string; size?: number; level?: 'L' | 'M' | 'Q' | 'H' }) {
+  return (
+    <QRCodeSVG 
+      value={value} 
+      size={size} 
+      level={level}
+      includeMargin={true}
+      bgColor="#ffffff"
+      fgColor="#000000"
+    />
+  );
 }
 
 // ============ AUTH CONTEXT ============
@@ -466,7 +455,7 @@ function AbsenPage() {
               onClick={() => setScanMode(true)}
               className={`flex-1 py-2 rounded-lg font-medium transition-colors ${scanMode ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600'}`}
             >
-              Scan Barcode
+              Scan QR Code
             </button>
           </div>
 
@@ -552,7 +541,7 @@ function BarcodeScanner({ onScan }: { onScan: (result: string) => void }) {
         disabled={scanning}
         className="w-full bg-green-600 text-white py-3 rounded-lg font-semibold hover:bg-green-700 disabled:bg-gray-400"
       >
-        {scanning ? 'Scanning...' : '🔍 Mulai Scan Barcode'}
+        {scanning ? 'Scanning...' : '🔍 Mulai Scan QR Code'}
       </button>
     </div>
   );
@@ -595,32 +584,114 @@ function PegawaiPage() {
     }
   };
 
-  const generateBarcodeSVG = (value: string): string => {
-    // Generate barcode SVG string using JsBarcode
-    const canvas = document.createElement('canvas');
+  const generateQRCodeDataUrl = async (value: string): Promise<string> => {
     try {
-      JsBarcode(canvas, value, {
-        format: 'CODE128',
-        width: 1.5,
-        height: 50,
-        displayValue: true,
-        fontSize: 12,
-        margin: 5,
-        background: '#ffffff',
-        lineColor: '#000000'
+      const dataUrl = await QRCode.toDataURL(value, {
+        width: 200,
+        margin: 2,
+        color: {
+          dark: '#000000',
+          light: '#ffffff'
+        }
       });
-      return canvas.toDataURL('image/png');
+      return dataUrl;
     } catch (e) {
       return '';
     }
   };
 
-  const printCard = (p: Pegawai) => {
+  const downloadQRCode = async (p: Pegawai, format: 'png' | 'jpg' | 'jpeg' | 'pdf') => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 400;
+    canvas.height = 600;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    // Draw card background
+    const gradient = ctx.createLinearGradient(0, 0, 400, 600);
+    gradient.addColorStop(0, '#eff6ff');
+    gradient.addColorStop(1, '#dbeafe');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, 400, 600);
+
+    // Draw border
+    ctx.strokeStyle = '#1e40af';
+    ctx.lineWidth = 4;
+    ctx.strokeRect(2, 2, 396, 596);
+
+    // Draw header
+    ctx.fillStyle = '#1e40af';
+    ctx.font = 'bold 16px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('SMP NEGERI 61 BANDUNG', 200, 40);
+    ctx.font = '14px Arial';
+    ctx.fillText('Kartu Pegawai', 200, 60);
+
+    // Draw photo circle
+    ctx.beginPath();
+    ctx.arc(200, 120, 30, 0, Math.PI * 2);
+    ctx.fillStyle = '#1e40af';
+    ctx.fill();
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 24px Arial';
+    ctx.fillText(p.nama.charAt(0), 200, 130);
+
+    // Draw info
+    ctx.fillStyle = '#000000';
+    ctx.font = 'bold 18px Arial';
+    ctx.fillText(p.nama, 200, 190);
+    ctx.font = '14px Arial';
+    ctx.fillText(`NIP: ${p.nip}`, 200, 215);
+    ctx.fillText(`Jabatan: ${p.jabatan}`, 200, 240);
+    ctx.fillText(`ID: ${p.idAbsen}`, 200, 265);
+
+    // Generate and draw QR Code
+    try {
+      const qrCanvas = document.createElement('canvas');
+      await QRCode.toCanvas(qrCanvas, p.idAbsen, {
+        width: 180,
+        margin: 2,
+        color: {
+          dark: '#000000',
+          light: '#ffffff'
+        }
+      });
+      ctx.drawImage(qrCanvas, 110, 290, 180, 180);
+    } catch (e) {
+      // Fallback: draw white rectangle if QR generation fails
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(110, 290, 180, 180);
+    }
+
+    // Draw ID text below QR
+    ctx.fillStyle = '#666666';
+    ctx.font = '12px Arial';
+    ctx.fillText(`ID Absen: ${p.idAbsen}`, 200, 500);
+
+    // Download based on format
+    if (format === 'pdf') {
+      const doc = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: [60, 90]
+      });
+      doc.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, 60, 90);
+      doc.save(`Kartu_Pegawai_${p.nama.replace(/\s+/g, '_')}.pdf`);
+    } else {
+      const dataUrl = canvas.toDataURL(`image/${format}`, 1.0);
+      const link = document.createElement('a');
+      link.download = `Kartu_Pegawai_${p.nama.replace(/\s+/g, '_')}.${format}`;
+      link.href = dataUrl;
+      link.click();
+    }
+  };
+
+  const printCard = async (p: Pegawai) => {
     const settings = store.getSettings();
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
 
-    const barcodeDataUrl = generateBarcodeSVG(p.idAbsen);
+    const barcodeDataUrl = await generateQRCodeDataUrl(p.idAbsen);
     
     printWindow.document.write(`
       <html>
@@ -666,7 +737,7 @@ function PegawaiPage() {
               <p>ID: ${p.idAbsen}</p>
             </div>
             <div class="barcode">
-              ${barcodeDataUrl ? `<img src="${barcodeDataUrl}" alt="Barcode ${p.idAbsen}" />` : `<p>${p.idAbsen}</p>`}
+              ${barcodeDataUrl ? `<img src="${barcodeDataUrl}" alt="QR Code ${p.idAbsen}" />` : `<p>${p.idAbsen}</p>`}
             </div>
             <div class="footer">
               <p>ID Absen: ${p.idAbsen}</p>
@@ -679,13 +750,13 @@ function PegawaiPage() {
     printWindow.document.close();
   };
 
-  const printAllCards = () => {
+  const printAllCards = async () => {
     const settings = store.getSettings();
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
 
-    const cardsHtml = pegawai.map(p => {
-      const barcodeDataUrl = generateBarcodeSVG(p.idAbsen);
+    const cardsHtml = (await Promise.all(pegawai.map(async (p) => {
+      const barcodeDataUrl = await generateQRCodeDataUrl(p.idAbsen);
       return `
         <div class="card">
           <div class="header">
@@ -700,14 +771,14 @@ function PegawaiPage() {
             <p>ID: ${p.idAbsen}</p>
           </div>
           <div class="barcode">
-            ${barcodeDataUrl ? `<img src="${barcodeDataUrl}" alt="Barcode ${p.idAbsen}" />` : `<p>${p.idAbsen}</p>`}
+            ${barcodeDataUrl ? `<img src="${barcodeDataUrl}" alt="QR Code ${p.idAbsen}" />` : `<p>${p.idAbsen}</p>`}
           </div>
           <div class="footer">
             <p>ID Absen: ${p.idAbsen}</p>
           </div>
         </div>
       `;
-    }).join('');
+    }))).join('');
 
     printWindow.document.write(`
       <html>
@@ -816,7 +887,7 @@ function PegawaiPage() {
                 <th className="px-4 py-3 text-left text-sm font-semibold text-blue-800">NIP</th>
                 <th className="px-4 py-3 text-left text-sm font-semibold text-blue-800">Jabatan</th>
                 <th className="px-4 py-3 text-left text-sm font-semibold text-blue-800">ID Absen</th>
-                <th className="px-4 py-3 text-center text-sm font-semibold text-blue-800">Barcode</th>
+                <th className="px-4 py-3 text-center text-sm font-semibold text-blue-800">QR Code</th>
                 <th className="px-4 py-3 text-center text-sm font-semibold text-blue-800">Aksi</th>
               </tr>
             </thead>
@@ -830,21 +901,30 @@ function PegawaiPage() {
                   <td className="px-4 py-3 text-sm font-mono">{p.idAbsen}</td>
                   <td className="px-4 py-3 text-center">
                     <div className="flex justify-center">
-                      <BarcodeDisplay value={p.idAbsen} width={1.2} height={30} fontSize={8} showText={true} />
+                      <QRCodeDisplay value={p.idAbsen} size={60} level="H" />
                     </div>
                   </td>
                   <td className="px-4 py-3 text-center">
                     <div className="flex items-center justify-center gap-2 flex-wrap">
-                      <button onClick={() => setPreviewBarcode(p)} className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs hover:bg-blue-200" title="Preview Barcode">
+                      <button onClick={() => setPreviewBarcode(p)} className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs hover:bg-blue-200" title="Preview QR Code">
                         👁️ Preview
                       </button>
                       <button onClick={() => printCard(p)} className="px-2 py-1 bg-green-100 text-green-700 rounded text-xs hover:bg-green-200" title="Cetak Kartu">
                         🖨️ Kartu
                       </button>
+                      <button onClick={() => downloadQRCode(p, 'pdf')} className="px-2 py-1 bg-red-100 text-red-700 rounded text-xs hover:bg-red-200" title="Download PDF">
+                        📄 PDF
+                      </button>
+                      <button onClick={() => downloadQRCode(p, 'png')} className="px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs hover:bg-purple-200" title="Download PNG">
+                        🖼️ PNG
+                      </button>
+                      <button onClick={() => downloadQRCode(p, 'jpg')} className="px-2 py-1 bg-indigo-100 text-indigo-700 rounded text-xs hover:bg-indigo-200" title="Download JPG">
+                        🖼️ JPG
+                      </button>
                       <button onClick={() => handleEdit(p)} className="px-2 py-1 bg-yellow-100 text-yellow-700 rounded text-xs hover:bg-yellow-200">
                         ✏️ Edit
                       </button>
-                      <button onClick={() => handleDelete(p.id)} className="px-2 py-1 bg-red-100 text-red-700 rounded text-xs hover:bg-red-200">
+                      <button onClick={() => handleDelete(p.id)} className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs hover:bg-gray-200">
                         🗑️ Hapus
                       </button>
                     </div>
@@ -859,12 +939,12 @@ function PegawaiPage() {
         </div>
       </div>
 
-      {/* Preview Barcode Modal */}
+      {/* Preview QR Code Modal */}
       {previewBarcode && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold text-gray-800">Preview Barcode</h3>
+              <h3 className="text-lg font-bold text-gray-800">Preview QR Code</h3>
               <button onClick={() => setPreviewBarcode(null)} className="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
             </div>
             <div className="text-center space-y-3">
@@ -874,12 +954,21 @@ function PegawaiPage() {
                 <p className="text-sm text-gray-600">{previewBarcode.jabatan}</p>
               </div>
               <div className="bg-white border-2 border-blue-200 rounded-lg p-4 flex justify-center">
-                <BarcodeDisplay value={previewBarcode.idAbsen} width={2} height={60} fontSize={14} showText={true} />
+                <QRCodeDisplay value={previewBarcode.idAbsen} size={150} level="H" />
               </div>
               <p className="text-sm text-gray-500">ID Absen: <span className="font-mono font-bold">{previewBarcode.idAbsen}</span></p>
-              <div className="flex gap-2 justify-center pt-2">
+              <div className="flex gap-2 justify-center pt-2 flex-wrap">
                 <button onClick={() => { printCard(previewBarcode); }} className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 text-sm">
                   🖨️ Cetak Kartu
+                </button>
+                <button onClick={() => downloadQRCode(previewBarcode, 'pdf')} className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 text-sm">
+                  📄 PDF
+                </button>
+                <button onClick={() => downloadQRCode(previewBarcode, 'png')} className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm">
+                  🖼️ PNG
+                </button>
+                <button onClick={() => downloadQRCode(previewBarcode, 'jpg')} className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 text-sm">
+                  🖼️ JPG
                 </button>
                 <button onClick={() => setPreviewBarcode(null)} className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 text-sm">
                   Tutup
