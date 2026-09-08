@@ -8,7 +8,11 @@ const DEFAULT_SETTINGS: Settings = {
     nip: '196805151993031008',
     jabatan: 'Kepala Sekolah'
   },
-  hariKerja: {},
+  hariKerja: {
+    // Default: Sabtu (weekday_6) = libur, Minggu otomatis libur
+    // Senin-Jumat (weekday_1 s/d weekday_5) = hari kerja (default true jika tidak diset)
+    'weekday_6': false
+  },
   identitasSekolah: {
     nama: 'SMP NEGERI 61 BANDUNG',
     npsn: '20205678',
