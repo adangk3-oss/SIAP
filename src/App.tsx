@@ -1180,12 +1180,31 @@ function RekapBulananPage() {
     return absensi.find(a => a.pegawaiId === pegawaiId && a.tanggal === dateStr);
   };
 
+  const isWorkingDay = (date: Date, dateStr: string): boolean => {
+    // Cek apakah ada pengaturan khusus untuk tanggal ini
+    if (settings.hariKerja[dateStr] !== undefined) {
+      return settings.hariKerja[dateStr];
+    }
+    
+    // Jika weekend, otomatis libur
+    if (isWeekend(date)) {
+      return false;
+    }
+    
+    // Cek pengaturan hari kerja mingguan
+    const dayOfWeek = date.getDay(); // 0 = Minggu, 1 = Senin, ..., 6 = Sabtu
+    const weekdayKey = `weekday_${dayOfWeek === 0 ? 7 : dayOfWeek}`; // Konversi: Minggu=7, Senin=1, ..., Jumat=5, Sabtu=6
+    
+    // Default true jika tidak diset
+    return settings.hariKerja[weekdayKey] !== false;
+  };
+
   const getSummary = (pegawaiId: string) => {
     let hadir = 0, izin = 0, sakit = 0, alpha = 0;
     for (let d = 1; d <= daysInMonth; d++) {
       const dateStr = `${selectedMonth}-${String(d).padStart(2, '0')}`;
       const date = new Date(year, month - 1, d);
-      if (isWeekend(date)) continue;
+      if (!isWorkingDay(date, dateStr)) continue;
       const record = absensi.find(a => a.pegawaiId === pegawaiId && a.tanggal === dateStr);
       if (record?.datang) hadir++;
       else if (record?.keteranganIzin) izin++;
@@ -1257,18 +1276,18 @@ function RekapBulananPage() {
     for (let d = 1; d <= daysInMonth; d++) {
       const dateStr = `${selectedMonth}-${String(d).padStart(2, '0')}`;
       const date = new Date(year, month - 1, d);
-      const isWeekendDay = isWeekend(date);
+      const isWorking = isWorkingDay(date, dateStr);
       const record = absensi.find(a => a.pegawaiId === p.id && a.tanggal === dateStr);
       
-      if (!isWeekendDay) {
+      if (isWorking) {
         if (record?.datang) hadirCount++;
         else if (record?.keteranganIzin) izinCount++;
         else alphaCount++;
       }
       
       tableRows += `
-        <tr${isWeekendDay ? ' style="background-color:#f3f4f6"' : ''}>
-          <td style="font-weight:${isWeekendDay ? 'bold' : 'normal'}">${format(date, 'EEEE, dd MMMM yyyy', { locale: idLocale })}${isWeekendDay ? ' <span style="color:#ef4444;font-size:9pt">(Akhir Pekan)</span>' : ''}</td>
+        <tr${!isWorking ? ' style="background-color:#f3f4f6"' : ''}>
+          <td style="font-weight:${!isWorking ? 'bold' : 'normal'}">${format(date, 'EEEE, dd MMMM yyyy', { locale: idLocale })}${!isWorking ? ' <span style="color:#ef4444;font-size:9pt">(Libur)</span>' : ''}</td>
           <td style="text-align:center;color:#16a34a;font-weight:bold">${record?.datang || '-'}</td>
           <td style="text-align:center;color:#ca8a04">${record?.izinKeluar || '-'}</td>
           <td style="text-align:center;color:#9333ea">${record?.izinMasuk || '-'}</td>
@@ -1613,9 +1632,9 @@ function RekapBulananPage() {
                   for (let d = 1; d <= daysInMonth; d++) {
                     const dateStr = `${selectedMonth}-${String(d).padStart(2, '0')}`;
                     const date = new Date(year, month - 1, d);
-                    const isWeekendDay = isWeekend(date);
+                    const isWorking = isWorkingDay(date, dateStr);
                     const record = absensi.find(a => a.pegawaiId === p.id && a.tanggal === dateStr);
-                    if (record || !isWeekendDay) {
+                    if (record || isWorking) {
                       rows.push({ date: dateStr, record });
                     }
                   }
@@ -1626,14 +1645,14 @@ function RekapBulananPage() {
                   
                   return rows.map((row, idx) => {
                     const dateObj = parseISO(row.date);
-                    const isWeekendDay = isWeekend(dateObj);
+                    const isWorking = isWorkingDay(dateObj, row.date);
                     return (
-                      <tr key={idx} className={`border-t hover:bg-gray-50 ${isWeekendDay ? 'bg-gray-50' : ''}`}>
+                      <tr key={idx} className={`border-t hover:bg-gray-50 ${!isWorking ? 'bg-gray-50' : ''}`}>
                         <td className="px-4 py-3 text-sm font-medium sticky left-0 bg-white whitespace-nowrap">
                           <div className="flex flex-col">
                             <span className="text-blue-900 font-bold">{format(dateObj, 'EEEE', { locale: idLocale })}</span>
                             <span className="text-xs text-gray-500">{format(dateObj, 'dd MMMM yyyy', { locale: idLocale })}</span>
-                            {isWeekendDay && <span className="text-xs text-red-500 font-semibold">(Akhir Pekan)</span>}
+                            {!isWorking && <span className="text-xs text-red-500 font-semibold">(Libur)</span>}
                           </div>
                         </td>
                         <td className="px-4 py-3 text-sm text-center text-green-600 font-semibold">{row.record?.datang || '-'}</td>
@@ -1947,29 +1966,121 @@ function PengaturanPage() {
         )}
 
         {activeTab === 'harikerja' && (
-          <div className="space-y-4">
+          <div className="space-y-6">
             <h3 className="font-bold text-lg text-gray-800">Pengaturan Hari Kerja</h3>
-            <p className="text-sm text-gray-500">Klik tanggal untuk menandai sebagai hari libur/non-kerja</p>
-            <input type="month" value={selectedMonthHari} onChange={e => setSelectedMonthHari(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
-            <div className="grid grid-cols-7 gap-2">
-              {['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'].map(d => (
-                <div key={d} className="text-center text-xs font-bold text-gray-500 py-1">{d}</div>
-              ))}
-              {Array.from({ length: daysInMonth }, (_, i) => {
-                const date = new Date(year, month - 1, i + 1);
-                const dateStr = `${selectedMonthHari}-${String(i + 1).padStart(2, '0')}`;
-                const isOff = settings.hariKerja[dateStr] === false;
-                const isWeekendDay = isWeekend(date);
-                return (
-                  <button key={i} onClick={() => toggleHariKerja(dateStr)}
-                    className={`p-2 rounded-lg text-sm font-medium transition-colors ${isOff ? 'bg-red-100 text-red-700 border-2 border-red-300' : isWeekendDay ? 'bg-gray-100 text-gray-400' : 'bg-green-50 text-green-700 border-2 border-green-200 hover:bg-green-100'}`}>
-                    {i + 1}
-                  </button>
-                );
-              })}
+            
+            {/* Hari Kerja Mingguan */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <h4 className="font-semibold text-blue-900 mb-3">📅 Hari Kerja Mingguan</h4>
+              <p className="text-sm text-gray-600 mb-4">Atur hari kerja default untuk Senin - Jumat. Sabtu dan Minggu otomatis libur.</p>
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                {['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'].map((day, idx) => {
+                  const dayKey = `weekday_${idx + 1}`; // 1 = Senin, 5 = Jumat
+                  const isWorkingDay = settings.hariKerja[dayKey] !== false; // Default true jika tidak diset
+                  return (
+                    <div key={day} className="bg-white rounded-lg p-3 border-2 border-blue-200">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="font-medium text-gray-800">{day}</span>
+                        <button
+                          onClick={() => {
+                            const newHariKerja = { ...settings.hariKerja };
+                            newHariKerja[dayKey] = !isWorkingDay;
+                            setSettings({ ...settings, hariKerja: newHariKerja });
+                          }}
+                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${isWorkingDay ? 'bg-green-500' : 'bg-gray-300'}`}
+                        >
+                          <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${isWorkingDay ? 'translate-x-6' : 'translate-x-1'}`} />
+                        </button>
+                      </div>
+                      <div className={`text-xs font-semibold ${isWorkingDay ? 'text-green-600' : 'text-red-600'}`}>
+                        {isWorkingDay ? '✓ Hari Kerja' : '✗ Libur'}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="mt-4 grid grid-cols-2 gap-3">
+                <div className="bg-gray-100 rounded-lg p-3 border-2 border-gray-300">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="font-medium text-gray-600">Sabtu</span>
+                    <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full font-semibold">LIBUR</span>
+                  </div>
+                  <div className="text-xs text-gray-500">Otomatis libur</div>
+                </div>
+                <div className="bg-gray-100 rounded-lg p-3 border-2 border-gray-300">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="font-medium text-gray-600">Minggu</span>
+                    <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full font-semibold">LIBUR</span>
+                  </div>
+                  <div className="text-xs text-gray-500">Otomatis libur</div>
+                </div>
+              </div>
             </div>
-            <p className="text-xs text-gray-400">🟢 = Hari Kerja | 🔴 = Libur/Non-kerja | Abu = Weekend</p>
+
+            {/* Kalender Bulanan */}
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+              <h4 className="font-semibold text-green-900 mb-3">📆 Pengaturan Khusus per Bulan</h4>
+              <p className="text-sm text-gray-600 mb-4">Atur hari libur khusus atau hari kerja tambahan untuk bulan tertentu (misal: libur nasional, cuti bersama)</p>
+              <input type="month" value={selectedMonthHari} onChange={e => setSelectedMonthHari(e.target.value)}
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 mb-4" />
+              <div className="grid grid-cols-7 gap-2">
+                {['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'].map(d => (
+                  <div key={d} className="text-center text-xs font-bold text-gray-500 py-1">{d}</div>
+                ))}
+                {Array.from({ length: daysInMonth }, (_, i) => {
+                  const date = new Date(year, month - 1, i + 1);
+                  const dateStr = `${selectedMonthHari}-${String(i + 1).padStart(2, '0')}`;
+                  const isWeekendDay = isWeekend(date);
+                  const dayOfWeek = date.getDay(); // 0 = Minggu, 1 = Senin, ..., 6 = Sabtu
+                  const weekdayKey = `weekday_${dayOfWeek === 0 ? 7 : dayOfWeek}`; // Konversi: Minggu=7, Senin=1, ..., Jumat=5, Sabtu=6
+                  const isDefaultWorkingDay = settings.hariKerja[weekdayKey] !== false;
+                  const isOverridden = settings.hariKerja[dateStr] !== undefined;
+                  const isOff = isOverridden ? settings.hariKerja[dateStr] === false : !isDefaultWorkingDay;
+                  
+                  return (
+                    <button 
+                      key={i} 
+                      onClick={() => !isWeekendDay && toggleHariKerja(dateStr)}
+                      disabled={isWeekendDay}
+                      className={`p-2 rounded-lg text-sm font-medium transition-colors relative ${
+                        isWeekendDay 
+                          ? 'bg-gray-200 text-gray-400 cursor-not-allowed' 
+                          : isOff 
+                            ? 'bg-red-100 text-red-700 border-2 border-red-300 hover:bg-red-200' 
+                            : 'bg-green-50 text-green-700 border-2 border-green-200 hover:bg-green-100'
+                      }`}
+                    >
+                      {i + 1}
+                      {isOverridden && !isWeekendDay && (
+                        <span className="absolute top-0 right-0 w-2 h-2 bg-blue-500 rounded-full"></span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="mt-4 flex flex-wrap gap-4 text-xs">
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 bg-green-50 border-2 border-green-200 rounded"></div>
+                  <span className="text-gray-600">Hari Kerja</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 bg-red-100 border-2 border-red-300 rounded"></div>
+                  <span className="text-gray-600">Libur/Non-kerja</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 bg-gray-200 rounded"></div>
+                  <span className="text-gray-600">Weekend (Otomatis Libur)</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                  <span className="text-gray-600">Pengaturan Khusus</span>
+                </div>
+              </div>
+            </div>
+
+            <button onClick={save} className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 font-semibold">
+              💾 Simpan Pengaturan Hari Kerja
+            </button>
           </div>
         )}
 
