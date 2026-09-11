@@ -126,9 +126,7 @@ function LoginPage({ onLogin }: { onLogin: (u: string, p: string) => boolean }) 
             Masuk
           </button>
         </form>
-        <div className="mt-6 text-center text-xs text-gray-400">
-          <p>Default: admin/admin123 | operator/operator123 | user/user123</p>
-        </div>
+
       </div>
     </div>
   );
