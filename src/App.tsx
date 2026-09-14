@@ -126,9 +126,7 @@ function LoginPage({ onLogin }: { onLogin: (u: string, p: string) => boolean }) 
             Masuk
           </button>
         </form>
-        <div className="mt-6 text-center text-xs text-gray-400">
-          <p>Default: admin/admin123 | operator/operator123 | user/user123</p>
-        </div>
+
       </div>
     </div>
   );
@@ -481,22 +479,7 @@ function AbsenPage() {
         </div>
       </div>
 
-      {/* Quick Select */}
-      <div className="bg-white rounded-xl shadow-sm border p-5">
-        <h3 className="font-bold text-gray-800 mb-4">Pilih Pegawai (Quick Access)</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {pegawai.map(p => (
-            <button
-              key={p.id}
-              onClick={() => processAbsen(p.id)}
-              className="p-3 border border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all text-left"
-            >
-              <p className="font-medium text-sm">{p.nama}</p>
-              <p className="text-xs text-gray-500">{p.jabatan} | ID: {p.idAbsen}</p>
-            </button>
-          ))}
-        </div>
-      </div>
+
     </div>
   );
 }
