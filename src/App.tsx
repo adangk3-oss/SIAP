@@ -50,7 +50,13 @@ function App() {
   }
 
   return (
-    <div className="flex h-screen bg-gray-100">
+    <div className="flex h-screen relative"
+         style={{
+           background: 'linear-gradient(135deg, #f5f7fa 0%, #e8ecf5 50%, #f0e6ff 100%)',
+         }}>
+      {/* Subtle background pattern */}
+      <div className="absolute inset-0 grid-pattern opacity-50 pointer-events-none" />
+      
       <Sidebar 
         currentUser={currentUser} 
         page={page} 
@@ -59,9 +65,13 @@ function App() {
         sidebarOpen={sidebarOpen}
         setSidebarOpen={setSidebarOpen}
       />
-      <div className="flex-1 overflow-auto">
+      <div className="flex-1 overflow-auto relative z-10">
         <Header currentUser={currentUser} setSidebarOpen={setSidebarOpen} />
-        <main className="p-4 md:p-6">
+        <main className="p-4 md:p-6 relative">
+          {/* Global watermark for all pages */}
+          <div className="watermark animate-watermark" style={{ color: 'rgba(99, 102, 241, 0.03)' }}>
+            Dunks"3
+          </div>
           {page === 'dashboard' && <Dashboard currentUser={currentUser} setPage={setPage} />}
           {page === 'absen' && <AbsenPage />}
           {page === 'pegawai' && <PegawaiPage />}
@@ -89,44 +99,107 @@ function LoginPage({ onLogin }: { onLogin: (u: string, p: string) => boolean }) 
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-600 via-blue-700 to-blue-900 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
-        <div className="text-center mb-8">
-          <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="w-10 h-10 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-            </svg>
-          </div>
-          <h1 className="text-2xl font-bold text-gray-800">SMP NEGERI 61 BANDUNG</h1>
-          <p className="text-gray-500 mt-1">Sistem Absensi Digital</p>
-        </div>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {error && <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-2 rounded-lg text-sm">{error}</div>}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Username</label>
-            <input
-              type="text"
-              value={username}
-              onChange={e => setUsername(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="Masukkan username"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-            <input
-              type="password"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="Masukkan password"
-            />
-          </div>
-          <button type="submit" className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors">
-            Masuk
-          </button>
-        </form>
+    <div className="min-h-screen relative overflow-hidden flex items-center justify-center p-4"
+         style={{ background: 'linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%)' }}>
+      {/* Animated background orbs */}
+      <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
+        <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] rounded-full opacity-30 animate-float"
+             style={{ background: 'radial-gradient(circle, #6366f1, transparent 70%)' }} />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] rounded-full opacity-20 animate-float"
+             style={{ background: 'radial-gradient(circle, #ec4899, transparent 70%)', animationDelay: '2s' }} />
+        <div className="absolute top-[40%] right-[20%] w-[300px] h-[300px] rounded-full opacity-20 animate-float"
+             style={{ background: 'radial-gradient(circle, #06b6d4, transparent 70%)', animationDelay: '4s' }} />
+      </div>
 
+      {/* Grid pattern overlay */}
+      <div className="absolute inset-0 grid-pattern opacity-40 pointer-events-none" />
+
+      {/* Watermark */}
+      <div className="watermark animate-watermark" style={{ color: 'rgba(139, 92, 246, 0.08)' }}>
+        Dunks"3
+      </div>
+
+      {/* Login Card */}
+      <div className="relative z-10 w-full max-w-md animate-fade-in-up">
+        <div className="glass rounded-3xl p-8 shadow-2xl animate-pulse-glow">
+          {/* Logo */}
+          <div className="text-center mb-8">
+            <div className="relative inline-block">
+              <div className="w-24 h-24 rounded-2xl flex items-center justify-center mx-auto mb-4 animate-float"
+                   style={{
+                     background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #ec4899 100%)',
+                     boxShadow: '0 10px 40px rgba(139, 92, 246, 0.5)',
+                   }}>
+                <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+              </div>
+              <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-400 rounded-full animate-pulse"
+                   style={{ boxShadow: '0 0 10px rgba(74, 222, 128, 0.8)' }} />
+            </div>
+            <h1 className="text-2xl font-black text-white neon-text tracking-wide">SMP NEGERI 61</h1>
+            <h2 className="text-lg font-bold text-purple-300 tracking-widest">BANDUNG</h2>
+            <div className="mt-3 inline-flex items-center gap-2 px-4 py-1.5 rounded-full glass">
+              <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+              <span className="text-xs text-purple-200 font-medium tracking-wide">SISTEM ABSENSI DIGITAL</span>
+            </div>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {error && (
+              <div className="bg-red-500/10 border border-red-500/30 text-red-300 px-4 py-3 rounded-xl text-sm backdrop-blur-sm flex items-center gap-2">
+                <span>⚠️</span> {error}
+              </div>
+            )}
+            <div>
+              <label className="block text-xs font-semibold text-purple-200 mb-2 uppercase tracking-wider">Username</label>
+              <div className="relative">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-purple-300">👤</span>
+                <input
+                  type="text"
+                  value={username}
+                  onChange={e => setUsername(e.target.value)}
+                  className="w-full pl-12 pr-4 py-3.5 glass rounded-xl text-white placeholder-purple-300/50 focus:outline-none focus:ring-2 focus:ring-purple-400 transition-all"
+                  placeholder="Masukkan username"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-purple-200 mb-2 uppercase tracking-wider">Password</label>
+              <div className="relative">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-purple-300">🔒</span>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  className="w-full pl-12 pr-4 py-3.5 glass rounded-xl text-white placeholder-purple-300/50 focus:outline-none focus:ring-2 focus:ring-purple-400 transition-all"
+                  placeholder="Masukkan password"
+                />
+              </div>
+            </div>
+            <button
+              type="submit"
+              className="btn-futuristic w-full py-4 rounded-xl font-bold text-white tracking-wider uppercase text-sm transition-all hover:scale-[1.02] active:scale-95"
+              style={{
+                background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #ec4899 100%)',
+                boxShadow: '0 10px 30px rgba(139, 92, 246, 0.4)',
+              }}
+            >
+              🚀 Masuk Sistem
+            </button>
+          </form>
+
+          <div className="mt-6 text-center">
+            <p className="text-xs text-purple-300/60">© 2024 SMP Negeri 61 Bandung</p>
+          </div>
+        </div>
+
+        {/* Watermark bottom */}
+        <div className="mt-6 text-center">
+          <p className="text-xs font-bold tracking-[0.3em] text-purple-400/40">
+            POWERED BY <span className="text-pink-400/60">DUNKS"3</span>
+          </p>
+        </div>
       </div>
     </div>
   );
@@ -149,30 +222,66 @@ function Sidebar({ currentUser, page, setPage, onLogout, sidebarOpen, setSidebar
   return (
     <>
       {sidebarOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-20 md:hidden" onClick={() => setSidebarOpen(false)} />
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-20 md:hidden" onClick={() => setSidebarOpen(false)} />
       )}
-      <aside className={`fixed md:static z-30 h-full w-64 bg-gradient-to-b from-blue-800 to-blue-900 text-white transform transition-transform duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0 md:w-20'}`}>
-        <div className="p-4 border-b border-blue-700">
-          <h2 className={`font-bold text-lg ${!sidebarOpen && 'md:hidden'}`}>SMPN 61 Bandung</h2>
-          <p className={`text-xs text-blue-300 ${!sidebarOpen && 'md:hidden'}`}>Sistem Absensi Digital</p>
+      <aside className={`fixed md:static z-30 h-full w-64 text-white transform transition-all duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0 md:w-20'}`}
+             style={{
+               background: 'linear-gradient(180deg, #0f0c29 0%, #302b63 50%, #24243e 100%)',
+               boxShadow: '4px 0 30px rgba(0, 0, 0, 0.3)',
+             }}>
+        {/* Header */}
+        <div className="p-4 border-b border-white/10">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                 style={{ background: 'linear-gradient(135deg, #6366f1, #a855f7)' }}>
+              <span className="text-lg">🏫</span>
+            </div>
+            <div className={`${!sidebarOpen && 'md:hidden'}`}>
+              <h2 className="font-bold text-sm tracking-wide">SMPN 61</h2>
+              <p className="text-[10px] text-purple-300 tracking-wider">BANDUNG</p>
+            </div>
+          </div>
         </div>
-        <nav className="p-2 space-y-1">
-          {filteredMenu.map(item => (
+
+        {/* Navigation */}
+        <nav className="p-2 space-y-1 mt-2">
+          {filteredMenu.map((item, idx) => (
             <button
               key={item.id}
               onClick={() => { setPage(item.id); if (window.innerWidth < 768) setSidebarOpen(false); }}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${page === item.id ? 'bg-blue-600 shadow-lg' : 'hover:bg-blue-700'}`}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 group relative overflow-hidden ${
+                page === item.id
+                  ? 'text-white'
+                  : 'text-purple-200/80 hover:text-white hover:bg-white/5'
+              }`}
+              style={page === item.id ? {
+                background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.3), rgba(168, 85, 247, 0.3))',
+                boxShadow: '0 0 20px rgba(99, 102, 241, 0.2), inset 0 0 20px rgba(255, 255, 255, 0.05)',
+                border: '1px solid rgba(139, 92, 246, 0.3)',
+              } : {}}
             >
-              <span className="text-xl">{item.icon}</span>
+              {page === item.id && (
+                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 rounded-r-full"
+                     style={{ background: 'linear-gradient(180deg, #6366f1, #ec4899)' }} />
+              )}
+              <span className="text-xl transition-transform group-hover:scale-110">{item.icon}</span>
               {sidebarOpen && <span className="text-sm font-medium">{item.label}</span>}
             </button>
           ))}
         </nav>
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-blue-700">
-          <button onClick={onLogout} className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-red-600 transition-colors">
-            <span className="text-xl">🚪</span>
-            {sidebarOpen && <span className="text-sm font-medium">Keluar</span>}
+
+        {/* Logout */}
+        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-white/10">
+          <button onClick={onLogout}
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-red-500/20 transition-all group border border-transparent hover:border-red-500/30">
+            <span className="text-xl transition-transform group-hover:scale-110">🚪</span>
+            {sidebarOpen && <span className="text-sm font-medium text-red-300">Keluar</span>}
           </button>
+          {sidebarOpen && (
+            <div className="mt-3 text-center">
+              <p className="text-[9px] text-purple-400/40 tracking-[0.2em] font-bold">DUNKS"3</p>
+            </div>
+          )}
         </div>
       </aside>
     </>
@@ -189,24 +298,29 @@ function Header({ currentUser, setSidebarOpen }: any) {
   }, []);
 
   return (
-    <header className="bg-white shadow-sm border-b border-gray-200 px-4 md:px-6 py-3 flex items-center justify-between">
-      <button onClick={() => setSidebarOpen((p: boolean) => !p)} className="p-2 rounded-lg hover:bg-gray-100">
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <header className="glass-card shadow-lg border-b border-purple-100 px-4 md:px-6 py-3 flex items-center justify-between sticky top-0 z-10">
+      <button onClick={() => setSidebarOpen((p: boolean) => !p)}
+              className="p-2 rounded-xl hover:bg-purple-50 transition-all group">
+        <svg className="w-6 h-6 text-purple-600 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
         </svg>
       </button>
       <div className="flex items-center gap-4">
-        <div className="text-right">
-          <p className="text-sm font-semibold text-gray-800">{format(currentTime, 'EEEE, dd MMMM yyyy', { locale: idLocale })}</p>
-          <p className="text-lg font-bold text-blue-600">{format(currentTime, 'HH:mm:ss')}</p>
+        <div className="text-right hidden sm:block">
+          <p className="text-xs font-semibold text-purple-800">{format(currentTime, 'EEEE, dd MMMM yyyy', { locale: idLocale })}</p>
+          <p className="text-xl font-black bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
+            {format(currentTime, 'HH:mm:ss')}
+          </p>
         </div>
-        <div className="flex items-center gap-2 bg-blue-50 px-3 py-2 rounded-lg">
-          <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white text-sm font-bold">
+        <div className="flex items-center gap-3 px-3 py-2 rounded-xl"
+             style={{ background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(168, 85, 247, 0.1))', border: '1px solid rgba(139, 92, 246, 0.2)' }}>
+          <div className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold"
+               style={{ background: 'linear-gradient(135deg, #6366f1, #a855f7)' }}>
             {currentUser.name.charAt(0)}
           </div>
           <div className="hidden md:block">
-            <p className="text-sm font-medium text-gray-800">{currentUser.name}</p>
-            <p className="text-xs text-gray-500 capitalize">{currentUser.role}</p>
+            <p className="text-sm font-bold text-gray-800">{currentUser.name}</p>
+            <p className="text-xs text-purple-600 capitalize font-medium">{currentUser.role}</p>
           </div>
         </div>
       </div>
@@ -223,82 +337,141 @@ function Dashboard({ currentUser, setPage }: { currentUser: User; setPage: (p: s
   const settings = store.getSettings();
 
   const stats = [
-    { label: 'Total Pegawai', value: pegawai.length, color: 'from-blue-500 to-blue-600', icon: '👥' },
-    { label: 'Hadir Hari Ini', value: todayAbsensi.filter(a => a.datang).length, color: 'from-green-500 to-green-600', icon: '✅' },
-    { label: 'Izin Hari Ini', value: todayAbsensi.filter(a => a.keteranganIzin).length, color: 'from-yellow-500 to-yellow-600', icon: '📝' },
-    { label: 'Belum Absen', value: pegawai.length - todayAbsensi.length, color: 'from-red-500 to-red-600', icon: '⚠️' },
+    { label: 'Total Pegawai', value: pegawai.length, icon: '👥', gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', glow: 'rgba(102, 126, 234, 0.4)' },
+    { label: 'Hadir Hari Ini', value: todayAbsensi.filter(a => a.datang).length, icon: '✅', gradient: 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)', glow: 'rgba(56, 239, 125, 0.4)' },
+    { label: 'Izin Hari Ini', value: todayAbsensi.filter(a => a.keteranganIzin).length, icon: '📝', gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', glow: 'rgba(245, 87, 108, 0.4)' },
+    { label: 'Belum Absen', value: pegawai.length - todayAbsensi.length, icon: '⚠️', gradient: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)', glow: 'rgba(250, 112, 154, 0.4)' },
   ];
 
   return (
-    <div className="space-y-6">
-      <div className="bg-gradient-to-r from-blue-600 to-blue-800 rounded-2xl p-6 text-white">
-        <h1 className="text-2xl font-bold">Selamat Datang, {currentUser.name}!</h1>
-        <p className="text-blue-200 mt-1">Sistem Absensi Digital SMP Negeri 61 Bandung</p>
-        <div className="mt-4 flex items-center gap-2 bg-white/10 rounded-lg px-4 py-2">
-          <span className="text-3xl font-mono font-bold">{format(new Date(), 'HH:mm:ss')}</span>
-          <span className="text-blue-200">| Jam Masuk: {settings.jamMasuk} - Jam Pulang: {settings.jamPulang}</span>
+    <div className="space-y-6 relative">
+      {/* Welcome Banner */}
+      <div className="relative overflow-hidden rounded-3xl p-6 md:p-8 text-white animate-fade-in-up"
+           style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%)' }}>
+        <div className="absolute inset-0 dot-pattern opacity-20" />
+        <div className="absolute top-0 right-0 w-64 h-64 rounded-full opacity-20 -translate-y-1/2 translate-x-1/2"
+             style={{ background: 'radial-gradient(circle, #fff, transparent 70%)' }} />
+        <div className="relative z-10">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="px-3 py-1 rounded-full text-xs font-bold bg-white/20 backdrop-blur-sm">
+              {format(new Date(), 'EEEE', { locale: idLocale })}
+            </span>
+            <span className="px-3 py-1 rounded-full text-xs font-bold bg-white/20 backdrop-blur-sm">
+              {format(new Date(), 'dd MMMM yyyy', { locale: idLocale })}
+            </span>
+          </div>
+          <h1 className="text-3xl md:text-4xl font-black">Selamat Datang, {currentUser.name}! 👋</h1>
+          <p className="text-white/80 mt-2 text-sm md:text-base">Sistem Absensi Digital SMP Negeri 61 Bandung</p>
+          <div className="mt-5 flex flex-wrap items-center gap-3">
+            <div className="glass rounded-2xl px-5 py-3 flex items-center gap-3">
+              <span className="text-3xl font-mono font-black bg-gradient-to-r from-yellow-200 to-pink-200 bg-clip-text text-transparent">
+                {format(new Date(), 'HH:mm:ss')}
+              </span>
+            </div>
+            <div className="glass rounded-2xl px-5 py-3 flex items-center gap-2">
+              <span className="text-xs text-white/70">JAM KERJA</span>
+              <span className="font-bold">{settings.jamMasuk}</span>
+              <span className="text-white/50">—</span>
+              <span className="font-bold">{settings.jamPulang}</span>
+            </div>
+          </div>
         </div>
       </div>
 
+      {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((stat, i) => (
-          <div key={i} className={`bg-gradient-to-br ${stat.color} rounded-xl p-5 text-white shadow-lg`}>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm opacity-90">{stat.label}</p>
-                <p className="text-3xl font-bold mt-1">{stat.value}</p>
+          <div key={i}
+               className="card-hover relative overflow-hidden rounded-2xl p-5 text-white animate-fade-in-up"
+               style={{
+                 background: stat.gradient,
+                 boxShadow: `0 10px 30px ${stat.glow}`,
+                 animationDelay: `${i * 0.1}s`,
+               }}>
+            <div className="absolute top-0 right-0 w-32 h-32 rounded-full opacity-20 -translate-y-1/2 translate-x-1/2"
+                 style={{ background: 'radial-gradient(circle, #fff, transparent 70%)' }} />
+            <div className="relative z-10">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wider opacity-90">{stat.label}</p>
+                  <p className="text-4xl font-black mt-2">{stat.value}</p>
+                </div>
+                <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                  <span className="text-3xl">{stat.icon}</span>
+                </div>
               </div>
-              <span className="text-4xl opacity-80">{stat.icon}</span>
             </div>
           </div>
         ))}
       </div>
 
+      {/* Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white rounded-xl shadow-sm border p-5">
-          <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2">
-            <span>📊</span> Akses Cepat
+        {/* Quick Access */}
+        <div className="glass-card rounded-2xl p-6 shadow-lg animate-fade-in-up">
+          <h3 className="font-bold text-gray-800 mb-5 flex items-center gap-2 text-lg">
+            <span className="w-8 h-8 rounded-lg flex items-center justify-center"
+                  style={{ background: 'linear-gradient(135deg, #667eea, #764ba2)' }}>
+              <span className="text-white text-sm">🚀</span>
+            </span>
+            Akses Cepat
           </h3>
           <div className="grid grid-cols-2 gap-3">
-            <button onClick={() => setPage('absen')} className="p-4 bg-blue-50 rounded-xl hover:bg-blue-100 transition-colors text-center">
-              <span className="text-2xl">✅</span>
-              <p className="text-sm font-medium text-blue-800 mt-1">Absensi</p>
-            </button>
-            <button onClick={() => setPage('pegawai')} className="p-4 bg-green-50 rounded-xl hover:bg-green-100 transition-colors text-center">
-              <span className="text-2xl">👥</span>
-              <p className="text-sm font-medium text-green-800 mt-1">Pegawai</p>
-            </button>
-            <button onClick={() => setPage('rekap-harian')} className="p-4 bg-purple-50 rounded-xl hover:bg-purple-100 transition-colors text-center">
-              <span className="text-2xl">📋</span>
-              <p className="text-sm font-medium text-purple-800 mt-1">Rekap Harian</p>
-            </button>
-            <button onClick={() => setPage('rekap-bulanan')} className="p-4 bg-orange-50 rounded-xl hover:bg-orange-100 transition-colors text-center">
-              <span className="text-2xl">📅</span>
-              <p className="text-sm font-medium text-orange-800 mt-1">Rekap Bulanan</p>
-            </button>
+            {[
+              { id: 'absen', icon: '✅', label: 'Absensi', gradient: 'linear-gradient(135deg, #667eea20, #764ba220)', border: '#667eea40', textColor: '#667eea' },
+              { id: 'pegawai', icon: '👥', label: 'Pegawai', gradient: 'linear-gradient(135deg, #11998e20, #38ef7d20)', border: '#11998e40', textColor: '#11998e' },
+              { id: 'rekap-harian', icon: '📋', label: 'Rekap Harian', gradient: 'linear-gradient(135deg, #f093fb20, #f5576c20)', border: '#f5576c40', textColor: '#f5576c' },
+              { id: 'rekap-bulanan', icon: '📅', label: 'Rekap Bulanan', gradient: 'linear-gradient(135deg, #fa709a20, #fee14020)', border: '#fa709a40', textColor: '#fa709a' },
+            ].map(item => (
+              <button key={item.id} onClick={() => setPage(item.id)}
+                      className="card-hover p-4 rounded-xl text-center transition-all hover:scale-105"
+                      style={{ background: item.gradient, border: `1px solid ${item.border}` }}>
+                <span className="text-3xl">{item.icon}</span>
+                <p className="text-sm font-bold mt-2" style={{ color: item.textColor }}>{item.label}</p>
+              </button>
+            ))}
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border p-5">
-          <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2">
-            <span>📈</span> Absensi Hari Ini
+        {/* Today's Attendance */}
+        <div className="glass-card rounded-2xl p-6 shadow-lg animate-fade-in-up">
+          <h3 className="font-bold text-gray-800 mb-5 flex items-center gap-2 text-lg">
+            <span className="w-8 h-8 rounded-lg flex items-center justify-center"
+                  style={{ background: 'linear-gradient(135deg, #11998e, #38ef7d)' }}>
+              <span className="text-white text-sm">📈</span>
+            </span>
+            Absensi Hari Ini
           </h3>
-          <div className="space-y-2 max-h-64 overflow-y-auto">
+          <div className="space-y-2 max-h-64 overflow-y-auto pr-2">
             {todayAbsensi.length === 0 ? (
-              <p className="text-gray-400 text-center py-8">Belum ada absensi hari ini</p>
+              <div className="text-center py-10">
+                <div className="text-5xl mb-3 opacity-50">📭</div>
+                <p className="text-gray-400 text-sm">Belum ada absensi hari ini</p>
+              </div>
             ) : (
-              todayAbsensi.map(a => {
+              todayAbsensi.map((a, idx) => {
                 const p = pegawai.find(pg => pg.id === a.pegawaiId);
                 return (
-                  <div key={a.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <div>
-                      <p className="font-medium text-sm">{p?.nama || 'Unknown'}</p>
-                      <p className="text-xs text-gray-500">{p?.jabatan}</p>
+                  <div key={a.id}
+                       className="flex items-center justify-between p-3 rounded-xl transition-all hover:scale-[1.01]"
+                       style={{
+                         background: `linear-gradient(135deg, rgba(99, 102, 241, ${0.03 + idx * 0.01}), rgba(168, 85, 247, ${0.03 + idx * 0.01}))`,
+                         border: '1px solid rgba(139, 92, 246, 0.1)',
+                       }}>
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-bold"
+                           style={{ background: 'linear-gradient(135deg, #667eea, #764ba2)' }}>
+                        {p?.nama?.charAt(0) || '?'}
+                      </div>
+                      <div>
+                        <p className="font-semibold text-sm text-gray-800">{p?.nama || 'Unknown'}</p>
+                        <p className="text-xs text-gray-500">{p?.jabatan}</p>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      {a.datang && <p className="text-xs text-green-600">Datang: {a.datang}</p>}
-                      {a.pulang && <p className="text-xs text-blue-600">Pulang: {a.pulang}</p>}
-                      {a.keteranganIzin && <p className="text-xs text-yellow-600">Izin: {a.keteranganIzin}</p>}
+                    <div className="text-right text-xs space-y-0.5">
+                      {a.datang && <p className="text-green-600 font-semibold">🟢 {a.datang}</p>}
+                      {a.pulang && <p className="text-blue-600 font-semibold">🔵 {a.pulang}</p>}
+                      {a.keteranganIzin && <p className="text-yellow-600 font-semibold">🟡 Izin</p>}
                     </div>
                   </div>
                 );
@@ -306,6 +479,13 @@ function Dashboard({ currentUser, setPage }: { currentUser: User; setPage: (p: s
             )}
           </div>
         </div>
+      </div>
+
+      {/* Footer watermark */}
+      <div className="text-center pt-4 pb-2">
+        <p className="text-xs font-bold tracking-[0.3em] text-purple-300/40">
+          POWERED BY <span className="text-pink-400/50">DUNKS"3</span>
+        </p>
       </div>
     </div>
   );
@@ -394,44 +574,71 @@ function AbsenPage() {
   };
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-bold text-gray-800">✅ Absensi Pegawai</h2>
+    <div className="space-y-6 relative">
+      <div className="flex items-center gap-3">
+        <div className="w-12 h-12 rounded-2xl flex items-center justify-center"
+             style={{ background: 'linear-gradient(135deg, #11998e, #38ef7d)', boxShadow: '0 8px 20px rgba(56, 239, 125, 0.3)' }}>
+          <span className="text-2xl">✅</span>
+        </div>
+        <div>
+          <h2 className="text-2xl font-black text-gray-800">Absensi Pegawai</h2>
+          <p className="text-sm text-gray-500">Catat kehadiran pegawai dengan mudah</p>
+        </div>
+      </div>
       
       {message && (
-        <div className={`p-4 rounded-lg ${messageType === 'success' ? 'bg-green-50 border border-green-200 text-green-700' : 'bg-red-50 border border-red-200 text-red-700'}`}>
-          {message}
+        <div className={`p-4 rounded-2xl backdrop-blur-sm flex items-center gap-3 animate-fade-in-up ${
+          messageType === 'success' 
+            ? 'bg-green-500/10 border border-green-500/30 text-green-700' 
+            : 'bg-red-500/10 border border-red-500/30 text-red-700'
+        }`}>
+          <span className="text-2xl">{messageType === 'success' ? '✅' : '❌'}</span>
+          <span className="font-medium">{message}</span>
         </div>
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Type Selection */}
-        <div className="bg-white rounded-xl shadow-sm border p-5">
-          <h3 className="font-bold text-gray-800 mb-4">Jenis Absensi</h3>
+        <div className="glass-card rounded-2xl p-6 shadow-lg">
+          <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2">
+            <span className="w-8 h-8 rounded-lg flex items-center justify-center"
+                  style={{ background: 'linear-gradient(135deg, #667eea, #764ba2)' }}>
+              <span className="text-white text-sm">📋</span>
+            </span>
+            Jenis Absensi
+          </h3>
           <div className="grid grid-cols-2 gap-3">
             {[
-              { value: 'datang', label: 'Datang', icon: '🌅', color: 'green' },
-              { value: 'pulang', label: 'Pulang', icon: '🌆', color: 'blue' },
-              { value: 'izinKeluar', label: 'Izin Keluar', icon: '🚶', color: 'yellow' },
-              { value: 'izinMasuk', label: 'Izin Masuk', icon: '🏠', color: 'purple' },
+              { value: 'datang', label: 'Datang', icon: '🌅', gradient: 'linear-gradient(135deg, #11998e20, #38ef7d20)', active: 'linear-gradient(135deg, #11998e, #38ef7d)' },
+              { value: 'pulang', label: 'Pulang', icon: '🌆', gradient: 'linear-gradient(135deg, #667eea20, #764ba220)', active: 'linear-gradient(135deg, #667eea, #764ba2)' },
+              { value: 'izinKeluar', label: 'Izin Keluar', icon: '🚶', gradient: 'linear-gradient(135deg, #f093fb20, #f5576c20)', active: 'linear-gradient(135deg, #f093fb, #f5576c)' },
+              { value: 'izinMasuk', label: 'Izin Masuk', icon: '🏠', gradient: 'linear-gradient(135deg, #fa709a20, #fee14020)', active: 'linear-gradient(135deg, #fa709a, #fee140)' },
             ].map(type => (
               <button
                 key={type.value}
                 onClick={() => setAbsenType(type.value as any)}
-                className={`p-4 rounded-xl border-2 transition-all ${absenType === type.value ? 'border-blue-500 bg-blue-50 shadow-md' : 'border-gray-200 hover:border-blue-300'}`}
+                className={`p-4 rounded-2xl border-2 transition-all card-hover ${
+                  absenType === type.value 
+                    ? 'text-white border-transparent scale-105' 
+                    : 'border-gray-200 hover:border-purple-300'
+                }`}
+                style={absenType === type.value 
+                  ? { background: type.active, boxShadow: '0 10px 25px rgba(0,0,0,0.15)' }
+                  : { background: type.gradient }}
               >
-                <span className="text-2xl">{type.icon}</span>
-                <p className="text-sm font-medium mt-1">{type.label}</p>
+                <span className="text-3xl">{type.icon}</span>
+                <p className="text-sm font-bold mt-2">{type.label}</p>
               </button>
             ))}
           </div>
 
           {(absenType === 'izinKeluar') && (
-            <div className="mt-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Keterangan Izin</label>
+            <div className="mt-5 animate-fade-in-up">
+              <label className="block text-xs font-semibold text-purple-600 mb-2 uppercase tracking-wider">Keterangan Izin</label>
               <textarea
                 value={keterangan}
                 onChange={e => setKeterangan(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-3 border-2 border-purple-200 rounded-xl focus:ring-2 focus:ring-purple-400 focus:border-transparent transition-all"
                 placeholder="Masukkan keterangan izin keluar..."
                 rows={3}
               />
@@ -440,37 +647,59 @@ function AbsenPage() {
         </div>
 
         {/* Input Method */}
-        <div className="bg-white rounded-xl shadow-sm border p-5">
-          <h3 className="font-bold text-gray-800 mb-4">Input Absensi</h3>
-          <div className="flex gap-2 mb-4">
+        <div className="glass-card rounded-2xl p-6 shadow-lg">
+          <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2">
+            <span className="w-8 h-8 rounded-lg flex items-center justify-center"
+                  style={{ background: 'linear-gradient(135deg, #11998e, #38ef7d)' }}>
+              <span className="text-white text-sm">⌨️</span>
+            </span>
+            Input Absensi
+          </h3>
+          <div className="flex gap-2 mb-5 p-1 rounded-xl"
+               style={{ background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(168, 85, 247, 0.1))' }}>
             <button
               onClick={() => setScanMode(false)}
-              className={`flex-1 py-2 rounded-lg font-medium transition-colors ${!scanMode ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600'}`}
+              className={`flex-1 py-2.5 rounded-lg font-semibold text-sm transition-all ${
+                !scanMode 
+                  ? 'text-white shadow-lg' 
+                  : 'text-gray-600 hover:text-gray-800'
+              }`}
+              style={!scanMode ? { background: 'linear-gradient(135deg, #667eea, #764ba2)' } : {}}
             >
-              Manual
+              ⌨️ Manual
             </button>
             <button
               onClick={() => setScanMode(true)}
-              className={`flex-1 py-2 rounded-lg font-medium transition-colors ${scanMode ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600'}`}
+              className={`flex-1 py-2.5 rounded-lg font-semibold text-sm transition-all ${
+                scanMode 
+                  ? 'text-white shadow-lg' 
+                  : 'text-gray-600 hover:text-gray-800'
+              }`}
+              style={scanMode ? { background: 'linear-gradient(135deg, #11998e, #38ef7d)' } : {}}
             >
-              Scan QR Code
+              📷 Scan QR
             </button>
           </div>
 
           {!scanMode ? (
             <form onSubmit={handleManualSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">ID Absen Pegawai</label>
+                <label className="block text-xs font-semibold text-purple-600 mb-2 uppercase tracking-wider">ID Absen Pegawai</label>
                 <input
                   type="text"
                   value={manualId}
                   onChange={e => setManualId(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-lg"
+                  className="w-full px-4 py-3.5 border-2 border-purple-200 rounded-xl focus:ring-2 focus:ring-purple-400 focus:border-transparent text-lg font-mono transition-all"
                   placeholder="Masukkan ID Absen..."
                 />
               </div>
-              <button type="submit" className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700">
-                Proses Absensi
+              <button type="submit"
+                      className="btn-futuristic w-full py-4 rounded-xl font-bold text-white tracking-wider uppercase text-sm transition-all hover:scale-[1.02] active:scale-95"
+                      style={{
+                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                        boxShadow: '0 10px 25px rgba(102, 126, 234, 0.4)',
+                      }}>
+                🚀 Proses Absensi
               </button>
             </form>
           ) : (
@@ -478,8 +707,6 @@ function AbsenPage() {
           )}
         </div>
       </div>
-
-
     </div>
   );
 }
@@ -511,20 +738,34 @@ function BarcodeScanner({ onScan }: { onScan: (result: string) => void }) {
 
   return (
     <div className="space-y-4">
-      <div id="barcode-reader" className="w-full rounded-lg overflow-hidden bg-gray-900 min-h-[200px] flex items-center justify-center">
+      <div id="barcode-reader" className="w-full rounded-2xl overflow-hidden min-h-[200px] flex items-center justify-center relative"
+           style={{ background: 'linear-gradient(135deg, #0f0c29, #302b63, #24243e)' }}>
         {!scanning && (
-          <div className="text-center text-gray-400">
-            <p className="text-4xl mb-2">📷</p>
-            <p>Klik tombol di bawah untuk mulai scan</p>
+          <div className="text-center text-purple-300">
+            <div className="text-5xl mb-3 animate-float">📷</div>
+            <p className="text-sm font-medium">Klik tombol di bawah untuk mulai scan</p>
+            <p className="text-xs text-purple-400/60 mt-1">Pastikan kamera aktif</p>
+          </div>
+        )}
+        {scanning && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="w-20 h-20 border-4 border-green-400 rounded-2xl animate-pulse"
+                 style={{ boxShadow: '0 0 30px rgba(74, 222, 128, 0.5)' }} />
           </div>
         )}
       </div>
       <button
         onClick={startScan}
         disabled={scanning}
-        className="w-full bg-green-600 text-white py-3 rounded-lg font-semibold hover:bg-green-700 disabled:bg-gray-400"
+        className="btn-futuristic w-full py-4 rounded-xl font-bold text-white tracking-wider uppercase text-sm transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+        style={{
+          background: scanning 
+            ? 'linear-gradient(135deg, #6b7280, #9ca3af)' 
+            : 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)',
+          boxShadow: scanning ? 'none' : '0 10px 25px rgba(56, 239, 125, 0.4)',
+        }}
       >
-        {scanning ? 'Scanning...' : '🔍 Mulai Scan QR Code'}
+        {scanning ? '🔄 Scanning...' : '🔍 Mulai Scan QR Code'}
       </button>
     </div>
   );
@@ -809,7 +1050,16 @@ function PegawaiPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
-        <h2 className="text-2xl font-bold text-gray-800">👥 Data Pegawai</h2>
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-2xl flex items-center justify-center"
+               style={{ background: 'linear-gradient(135deg, #667eea, #764ba2)', boxShadow: '0 8px 20px rgba(102, 126, 234, 0.3)' }}>
+            <span className="text-2xl">👥</span>
+          </div>
+          <div>
+            <h2 className="text-2xl font-black text-gray-800">Data Pegawai</h2>
+            <p className="text-sm text-gray-500">Kelola data pegawai sekolah</p>
+          </div>
+        </div>
         <div className="flex gap-2">
           {pegawai.length > 0 && (
             <button onClick={printAllCards}
@@ -1010,7 +1260,16 @@ function RekapHarianPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-4">
-        <h2 className="text-2xl font-bold text-gray-800">📋 Rekap Harian</h2>
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-2xl flex items-center justify-center"
+               style={{ background: 'linear-gradient(135deg, #f093fb, #f5576c)', boxShadow: '0 8px 20px rgba(245, 87, 108, 0.3)' }}>
+            <span className="text-2xl">📋</span>
+          </div>
+          <div>
+            <h2 className="text-2xl font-black text-gray-800">Rekap Harian</h2>
+            <p className="text-sm text-gray-500">Pantau absensi dan aktivitas harian</p>
+          </div>
+        </div>
         <div className="flex items-center gap-3">
           <input type="date" value={selectedDate} onChange={e => setSelectedDate(e.target.value)}
             className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
@@ -1503,7 +1762,16 @@ function RekapBulananPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-4">
-        <h2 className="text-2xl font-bold text-gray-800">📅 Rekap Bulanan</h2>
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-2xl flex items-center justify-center"
+               style={{ background: 'linear-gradient(135deg, #fa709a, #fee140)', boxShadow: '0 8px 20px rgba(250, 112, 154, 0.3)' }}>
+            <span className="text-2xl">📅</span>
+          </div>
+          <div>
+            <h2 className="text-2xl font-black text-gray-800">Rekap Bulanan</h2>
+            <p className="text-sm text-gray-500">Laporan absensi bulanan pegawai</p>
+          </div>
+        </div>
         <div className="flex items-center gap-3 flex-wrap">
           <input type="month" value={selectedMonth} onChange={e => setSelectedMonth(e.target.value)}
             className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
@@ -1710,7 +1978,16 @@ function UserManagementPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-gray-800">🔐 Manajemen User</h2>
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-2xl flex items-center justify-center"
+               style={{ background: 'linear-gradient(135deg, #667eea, #764ba2)', boxShadow: '0 8px 20px rgba(102, 126, 234, 0.3)' }}>
+            <span className="text-2xl">🔐</span>
+          </div>
+          <div>
+            <h2 className="text-2xl font-black text-gray-800">Manajemen User</h2>
+            <p className="text-sm text-gray-500">Kelola akun pengguna sistem</p>
+          </div>
+        </div>
         <button onClick={() => setShowForm(true)} className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
           + Tambah User
         </button>
@@ -1935,7 +2212,16 @@ function PengaturanPage() {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold text-gray-800">⚙️ Pengaturan</h2>
+      <div className="flex items-center gap-3">
+        <div className="w-12 h-12 rounded-2xl flex items-center justify-center"
+             style={{ background: 'linear-gradient(135deg, #11998e, #38ef7d)', boxShadow: '0 8px 20px rgba(56, 239, 125, 0.3)' }}>
+          <span className="text-2xl">⚙️</span>
+        </div>
+        <div>
+          <h2 className="text-2xl font-black text-gray-800">Pengaturan</h2>
+          <p className="text-sm text-gray-500">Konfigurasi sistem absensi</p>
+        </div>
+      </div>
 
       {saved && (
         <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-2 rounded-lg">
