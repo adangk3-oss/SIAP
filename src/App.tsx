@@ -714,21 +714,37 @@ function AbsenPage() {
 // ============ BARCODE SCANNER ============
 function BarcodeScanner({ onScan }: { onScan: (result: string) => void }) {
   const [scanning, setScanning] = useState(false);
+  const scannerRef = useRef<any>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const startScan = async () => {
     setScanning(true);
     try {
       const { Html5Qrcode } = await import('html5-qrcode');
-      const scanner = new Html5Qrcode('barcode-reader');
-      await scanner.start(
-        { facingMode: 'environment' },
-        { fps: 10, qrbox: { width: 250, height: 250 } },
-        (decodedText) => {
-          onScan(decodedText);
-          scanner.stop().then(() => setScanning(false));
-        },
-        () => {}
-      );
+      
+      // Create a unique ID for this scanner instance
+      const scannerId = `barcode-reader-${Date.now()}`;
+      
+      // Create a container div for the scanner
+      if (containerRef.current) {
+        const scannerDiv = document.createElement('div');
+        scannerDiv.id = scannerId;
+        scannerDiv.style.width = '100%';
+        scannerDiv.style.height = '100%';
+        containerRef.current.innerHTML = '';
+        containerRef.current.appendChild(scannerDiv);
+        
+        scannerRef.current = new Html5Qrcode(scannerId);
+        await scannerRef.current.start(
+          { facingMode: 'environment' },
+          { fps: 10, qrbox: { width: 250, height: 250 } },
+          (decodedText: string) => {
+            onScan(decodedText);
+            stopScan();
+          },
+          () => {}
+        );
+      }
     } catch (err) {
       console.error(err);
       setScanning(false);
@@ -736,10 +752,44 @@ function BarcodeScanner({ onScan }: { onScan: (result: string) => void }) {
     }
   };
 
+  const stopScan = async () => {
+    if (scannerRef.current) {
+      try {
+        await scannerRef.current.stop();
+        scannerRef.current.clear();
+      } catch (err) {
+        console.error('Error stopping scanner:', err);
+      }
+      scannerRef.current = null;
+    }
+    if (containerRef.current) {
+      containerRef.current.innerHTML = '';
+    }
+    setScanning(false);
+  };
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (scannerRef.current) {
+        try {
+          scannerRef.current.stop().then(() => {
+            scannerRef.current.clear();
+          }).catch(() => {});
+        } catch (err) {
+          console.error('Cleanup error:', err);
+        }
+      }
+    };
+  }, []);
+
   return (
     <div className="space-y-4">
-      <div id="barcode-reader" className="w-full rounded-2xl overflow-hidden min-h-[200px] flex items-center justify-center relative"
-           style={{ background: 'linear-gradient(135deg, #0f0c29, #302b63, #24243e)' }}>
+      <div 
+        ref={containerRef}
+        className="w-full rounded-2xl overflow-hidden min-h-[200px] flex items-center justify-center relative"
+        style={{ background: 'linear-gradient(135deg, #0f0c29, #302b63, #24243e)' }}
+      >
         {!scanning && (
           <div className="text-center text-purple-300">
             <div className="text-5xl mb-3 animate-float">📷</div>
@@ -748,24 +798,23 @@ function BarcodeScanner({ onScan }: { onScan: (result: string) => void }) {
           </div>
         )}
         {scanning && (
-          <div className="absolute inset-0 flex items-center justify-center">
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <div className="w-20 h-20 border-4 border-green-400 rounded-2xl animate-pulse"
                  style={{ boxShadow: '0 0 30px rgba(74, 222, 128, 0.5)' }} />
           </div>
         )}
       </div>
       <button
-        onClick={startScan}
-        disabled={scanning}
-        className="btn-futuristic w-full py-4 rounded-xl font-bold text-white tracking-wider uppercase text-sm transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+        onClick={scanning ? stopScan : startScan}
+        className="btn-futuristic w-full py-4 rounded-xl font-bold text-white tracking-wider uppercase text-sm transition-all hover:scale-[1.02] active:scale-95"
         style={{
           background: scanning 
-            ? 'linear-gradient(135deg, #6b7280, #9ca3af)' 
+            ? 'linear-gradient(135deg, #dc2626, #ef4444)' 
             : 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)',
-          boxShadow: scanning ? 'none' : '0 10px 25px rgba(56, 239, 125, 0.4)',
+          boxShadow: scanning ? '0 10px 25px rgba(220, 38, 38, 0.4)' : '0 10px 25px rgba(56, 239, 125, 0.4)',
         }}
       >
-        {scanning ? '🔄 Scanning...' : '🔍 Mulai Scan QR Code'}
+        {scanning ? '⏹️ Hentikan Scan' : '🔍 Mulai Scan QR Code'}
       </button>
     </div>
   );
