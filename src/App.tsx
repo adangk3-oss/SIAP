@@ -714,8 +714,24 @@ function AbsenPage() {
 // ============ BARCODE SCANNER ============
 function BarcodeScanner({ onScan }: { onScan: (result: string) => void }) {
   const [scanning, setScanning] = useState(false);
+  const [cameraType, setCameraType] = useState<'environment' | 'user'>('environment'); // 'environment' = belakang, 'user' = depan
+  const [availableCameras, setAvailableCameras] = useState<MediaDeviceInfo[]>([]);
   const scannerRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Get available cameras
+  useEffect(() => {
+    const getCameras = async () => {
+      try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const videoDevices = devices.filter(device => device.kind === 'videoinput');
+        setAvailableCameras(videoDevices);
+      } catch (err) {
+        console.error('Error getting cameras:', err);
+      }
+    };
+    getCameras();
+  }, []);
 
   const startScan = async () => {
     setScanning(true);
@@ -735,8 +751,14 @@ function BarcodeScanner({ onScan }: { onScan: (result: string) => void }) {
         containerRef.current.appendChild(scannerDiv);
         
         scannerRef.current = new Html5Qrcode(scannerId);
+        
+        // Use the selected camera type
+        const cameraConfig = cameraType === 'environment' 
+          ? { facingMode: { exact: 'environment' } }
+          : { facingMode: { exact: 'user' } };
+        
         await scannerRef.current.start(
-          { facingMode: 'environment' },
+          cameraConfig,
           { fps: 10, qrbox: { width: 250, height: 250 } },
           (decodedText: string) => {
             onScan(decodedText);
@@ -748,7 +770,35 @@ function BarcodeScanner({ onScan }: { onScan: (result: string) => void }) {
     } catch (err) {
       console.error(err);
       setScanning(false);
-      alert('Tidak dapat mengakses kamera. Pastikan izin kamera diberikan.');
+      
+      // Fallback: try without exact facing mode
+      try {
+        const { Html5Qrcode } = await import('html5-qrcode');
+        const scannerId = `barcode-reader-fallback-${Date.now()}`;
+        
+        if (containerRef.current) {
+          const scannerDiv = document.createElement('div');
+          scannerDiv.id = scannerId;
+          scannerDiv.style.width = '100%';
+          scannerDiv.style.height = '100%';
+          containerRef.current.innerHTML = '';
+          containerRef.current.appendChild(scannerDiv);
+          
+          scannerRef.current = new Html5Qrcode(scannerId);
+          await scannerRef.current.start(
+            { facingMode: cameraType },
+            { fps: 10, qrbox: { width: 250, height: 250 } },
+            (decodedText: string) => {
+              onScan(decodedText);
+              stopScan();
+            },
+            () => {}
+          );
+        }
+      } catch (fallbackErr) {
+        console.error('Fallback also failed:', fallbackErr);
+        alert('Tidak dapat mengakses kamera. Pastikan izin kamera diberikan.');
+      }
     }
   };
 
@@ -768,6 +818,19 @@ function BarcodeScanner({ onScan }: { onScan: (result: string) => void }) {
     setScanning(false);
   };
 
+  const switchCamera = async () => {
+    const wasScanning = scanning;
+    if (wasScanning) {
+      await stopScan();
+    }
+    setCameraType(prev => prev === 'environment' ? 'user' : 'environment');
+    
+    // Restart scanning if it was active
+    if (wasScanning) {
+      setTimeout(() => startScan(), 300);
+    }
+  };
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
@@ -785,37 +848,115 @@ function BarcodeScanner({ onScan }: { onScan: (result: string) => void }) {
 
   return (
     <div className="space-y-4">
+      {/* Camera Selection */}
+      <div className="flex gap-2">
+        <button
+          onClick={() => {
+            if (cameraType !== 'environment') {
+              setCameraType('environment');
+              if (scanning) {
+                stopScan().then(() => setTimeout(() => startScan(), 300));
+              }
+            }
+          }}
+          className={`flex-1 py-3 px-4 rounded-xl font-semibold text-sm transition-all ${
+            cameraType === 'environment'
+              ? 'text-white shadow-lg'
+              : 'text-gray-600 hover:text-gray-800'
+          }`}
+          style={cameraType === 'environment' 
+            ? { background: 'linear-gradient(135deg, #667eea, #764ba2)' }
+            : { background: 'rgba(99, 102, 241, 0.1)', border: '1px solid rgba(99, 102, 241, 0.2)' }}
+        >
+          📷 Kamera Belakang
+        </button>
+        <button
+          onClick={() => {
+            if (cameraType !== 'user') {
+              setCameraType('user');
+              if (scanning) {
+                stopScan().then(() => setTimeout(() => startScan(), 300));
+              }
+            }
+          }}
+          className={`flex-1 py-3 px-4 rounded-xl font-semibold text-sm transition-all ${
+            cameraType === 'user'
+              ? 'text-white shadow-lg'
+              : 'text-gray-600 hover:text-gray-800'
+          }`}
+          style={cameraType === 'user'
+            ? { background: 'linear-gradient(135deg, #f093fb, #f5576c)' }
+            : { background: 'rgba(240, 147, 251, 0.1)', border: '1px solid rgba(240, 147, 251, 0.2)' }}
+        >
+          🤳 Kamera Depan
+        </button>
+      </div>
+
+      {/* Camera Info */}
+      {availableCameras.length > 0 && (
+        <div className="text-xs text-center text-gray-500">
+          {availableCameras.length} kamera tersedia
+        </div>
+      )}
+
+      {/* Scanner Container */}
       <div 
         ref={containerRef}
-        className="w-full rounded-2xl overflow-hidden min-h-[200px] flex items-center justify-center relative"
+        className="w-full rounded-2xl overflow-hidden min-h-[250px] flex items-center justify-center relative"
         style={{ background: 'linear-gradient(135deg, #0f0c29, #302b63, #24243e)' }}
       >
         {!scanning && (
           <div className="text-center text-purple-300">
-            <div className="text-5xl mb-3 animate-float">📷</div>
-            <p className="text-sm font-medium">Klik tombol di bawah untuk mulai scan</p>
-            <p className="text-xs text-purple-400/60 mt-1">Pastikan kamera aktif</p>
+            <div className="text-5xl mb-3 animate-float">
+              {cameraType === 'environment' ? '📷' : '🤳'}
+            </div>
+            <p className="text-sm font-medium">
+              {cameraType === 'environment' ? 'Kamera Belakang' : 'Kamera Depan'}
+            </p>
+            <p className="text-xs text-purple-400/60 mt-1">Klik tombol di bawah untuk mulai scan</p>
           </div>
         )}
         {scanning && (
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div className="w-20 h-20 border-4 border-green-400 rounded-2xl animate-pulse"
-                 style={{ boxShadow: '0 0 30px rgba(74, 222, 128, 0.5)' }} />
-          </div>
+          <>
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <div className="w-24 h-24 border-4 border-green-400 rounded-2xl animate-pulse"
+                   style={{ boxShadow: '0 0 30px rgba(74, 222, 128, 0.5)' }} />
+            </div>
+            <div className="absolute top-3 right-3 px-3 py-1.5 rounded-full glass text-white text-xs font-semibold">
+              {cameraType === 'environment' ? '📷 Belakang' : '🤳 Depan'}
+            </div>
+          </>
         )}
       </div>
-      <button
-        onClick={scanning ? stopScan : startScan}
-        className="btn-futuristic w-full py-4 rounded-xl font-bold text-white tracking-wider uppercase text-sm transition-all hover:scale-[1.02] active:scale-95"
-        style={{
-          background: scanning 
-            ? 'linear-gradient(135deg, #dc2626, #ef4444)' 
-            : 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)',
-          boxShadow: scanning ? '0 10px 25px rgba(220, 38, 38, 0.4)' : '0 10px 25px rgba(56, 239, 125, 0.4)',
-        }}
-      >
-        {scanning ? '⏹️ Hentikan Scan' : '🔍 Mulai Scan QR Code'}
-      </button>
+
+      {/* Action Buttons */}
+      <div className="flex gap-2">
+        <button
+          onClick={scanning ? stopScan : startScan}
+          className="btn-futuristic flex-1 py-4 rounded-xl font-bold text-white tracking-wider uppercase text-sm transition-all hover:scale-[1.02] active:scale-95"
+          style={{
+            background: scanning 
+              ? 'linear-gradient(135deg, #dc2626, #ef4444)' 
+              : 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)',
+            boxShadow: scanning ? '0 10px 25px rgba(220, 38, 38, 0.4)' : '0 10px 25px rgba(56, 239, 125, 0.4)',
+          }}
+        >
+          {scanning ? '⏹️ Hentikan' : '🔍 Mulai Scan'}
+        </button>
+        
+        {scanning && (
+          <button
+            onClick={switchCamera}
+            className="btn-futuristic py-4 px-6 rounded-xl font-bold text-white tracking-wider uppercase text-sm transition-all hover:scale-[1.02] active:scale-95"
+            style={{
+              background: 'linear-gradient(135deg, #667eea, #764ba2)',
+              boxShadow: '0 10px 25px rgba(102, 126, 234, 0.4)',
+            }}
+          >
+            🔄 Ganti
+          </button>
+        )}
+      </div>
     </div>
   );
 }
