@@ -499,6 +499,7 @@ function AbsenPage() {
   const [keterangan, setKeterangan] = useState('');
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState<'success' | 'error'>('success');
+  const [lastScannedPegawai, setLastScannedPegawai] = useState<Pegawai | null>(null);
   const pegawai = store.getPegawai();
   const settings = store.getSettings();
 
@@ -519,22 +520,27 @@ function AbsenPage() {
       };
     }
 
+    // Simpan informasi pegawai yang terakhir scan
+    if (p) {
+      setLastScannedPegawai(p);
+    }
+
     if (absenType === 'datang') {
       record.datang = now;
-      setMessage(`✅ ${p?.nama} - Absen Datang: ${now}`);
+      setMessage(`Absen Datang berhasil dicatat`);
       setMessageType('success');
     } else if (absenType === 'pulang') {
       record.pulang = now;
-      setMessage(`✅ ${p?.nama} - Absen Pulang: ${now}`);
+      setMessage(`Absen Pulang berhasil dicatat`);
       setMessageType('success');
     } else if (absenType === 'izinKeluar') {
       record.izinKeluar = now;
       record.keteranganIzin = keterangan;
-      setMessage(`✅ ${p?.nama} - Izin Keluar: ${now} (${keterangan})`);
+      setMessage(`Izin Keluar berhasil dicatat`);
       setMessageType('success');
     } else if (absenType === 'izinMasuk') {
       record.izinMasuk = now;
-      setMessage(`✅ ${p?.nama} - Izin Masuk: ${now}`);
+      setMessage(`Izin Masuk berhasil dicatat`);
       setMessageType('success');
     }
 
@@ -586,14 +592,82 @@ function AbsenPage() {
         </div>
       </div>
       
-      {message && (
-        <div className={`p-4 rounded-2xl backdrop-blur-sm flex items-center gap-3 animate-fade-in-up ${
-          messageType === 'success' 
-            ? 'bg-green-500/10 border border-green-500/30 text-green-700' 
-            : 'bg-red-500/10 border border-red-500/30 text-red-700'
-        }`}>
-          <span className="text-2xl">{messageType === 'success' ? '✅' : '❌'}</span>
-          <span className="font-medium">{message}</span>
+      {message && lastScannedPegawai && messageType === 'success' && (
+        <div className="p-6 rounded-3xl backdrop-blur-sm animate-fade-in-up relative overflow-hidden"
+             style={{
+               background: 'linear-gradient(135deg, rgba(17, 153, 142, 0.1), rgba(56, 239, 125, 0.1))',
+               border: '2px solid rgba(56, 239, 125, 0.3)',
+               boxShadow: '0 10px 40px rgba(56, 239, 125, 0.2)'
+             }}>
+          <div className="absolute top-0 right-0 w-32 h-32 rounded-full opacity-20 -translate-y-1/2 translate-x-1/2"
+               style={{ background: 'radial-gradient(circle, #38ef7d, transparent 70%)' }} />
+          
+          <div className="relative z-10">
+            <div className="flex items-start gap-4">
+              <div className="w-16 h-16 rounded-2xl flex items-center justify-center flex-shrink-0 animate-float"
+                   style={{ background: 'linear-gradient(135deg, #11998e, #38ef7d)', boxShadow: '0 8px 20px rgba(56, 239, 125, 0.4)' }}>
+                <span className="text-3xl">✅</span>
+              </div>
+              
+              <div className="flex-1">
+                <h3 className="text-xl font-black text-green-800 mb-1">Absensi Berhasil!</h3>
+                <p className="text-sm text-green-700 mb-3">{message}</p>
+                
+                <div className="bg-white/60 rounded-xl p-4 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-semibold text-gray-600">Nama:</span>
+                    <span className="text-sm font-bold text-gray-800">{lastScannedPegawai.nama}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-semibold text-gray-600">NIP:</span>
+                    <span className="text-sm text-gray-700">{lastScannedPegawai.nip}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-semibold text-gray-600">Jabatan:</span>
+                    <span className="text-sm text-gray-700">{lastScannedPegawai.jabatan}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-semibold text-gray-600">Jenis:</span>
+                    <span className="text-sm font-bold text-green-700 capitalize">
+                      {absenType === 'datang' && '🌅 Datang'}
+                      {absenType === 'pulang' && '🌆 Pulang'}
+                      {absenType === 'izinKeluar' && '🚶 Izin Keluar'}
+                      {absenType === 'izinMasuk' && '🏠 Izin Masuk'}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-semibold text-gray-600">Waktu:</span>
+                    <span className="text-sm font-bold text-purple-700">{format(new Date(), 'HH:mm:ss')}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <button
+              onClick={() => { setMessage(''); setLastScannedPegawai(null); }}
+              className="mt-4 w-full py-2.5 rounded-xl font-semibold text-sm text-white transition-all hover:scale-[1.02] active:scale-95"
+              style={{ background: 'linear-gradient(135deg, #11998e, #38ef7d)' }}
+            >
+              ✓ Tutup Notifikasi
+            </button>
+          </div>
+        </div>
+      )}
+      
+      {message && messageType === 'error' && (
+        <div className="p-4 rounded-2xl backdrop-blur-sm flex items-center gap-3 animate-fade-in-up"
+             style={{
+               background: 'rgba(239, 68, 68, 0.1)',
+               border: '2px solid rgba(239, 68, 68, 0.3)'
+             }}>
+          <span className="text-2xl">❌</span>
+          <span className="font-medium text-red-700">{message}</span>
+          <button
+            onClick={() => setMessage('')}
+            className="ml-auto text-red-600 hover:text-red-800"
+          >
+            ✕
+          </button>
         </div>
       )}
 
@@ -703,7 +777,15 @@ function AbsenPage() {
               </button>
             </form>
           ) : (
-            <BarcodeScanner onScan={handleScan} />
+            <BarcodeScanner 
+              onScan={handleScan}
+              onScanComplete={() => {
+                // Kembali ke mode manual setelah scan selesai
+                setTimeout(() => {
+                  setScanMode(false);
+                }, 1500);
+              }}
+            />
           )}
         </div>
       </div>
@@ -712,7 +794,7 @@ function AbsenPage() {
 }
 
 // ============ BARCODE SCANNER ============
-function BarcodeScanner({ onScan }: { onScan: (result: string) => void }) {
+function BarcodeScanner({ onScan, onScanComplete }: { onScan: (result: string) => void; onScanComplete?: () => void }) {
   const [scanning, setScanning] = useState(false);
   const [cameraType, setCameraType] = useState<'environment' | 'user'>('environment'); // 'environment' = belakang, 'user' = depan
   const [availableCameras, setAvailableCameras] = useState<MediaDeviceInfo[]>([]);
@@ -763,6 +845,10 @@ function BarcodeScanner({ onScan }: { onScan: (result: string) => void }) {
           (decodedText: string) => {
             onScan(decodedText);
             stopScan();
+            // Panggil callback setelah scan selesai
+            if (onScanComplete) {
+              onScanComplete();
+            }
           },
           () => {}
         );
@@ -791,6 +877,10 @@ function BarcodeScanner({ onScan }: { onScan: (result: string) => void }) {
             (decodedText: string) => {
               onScan(decodedText);
               stopScan();
+              // Panggil callback setelah scan selesai
+              if (onScanComplete) {
+                onScanComplete();
+              }
             },
             () => {}
           );
