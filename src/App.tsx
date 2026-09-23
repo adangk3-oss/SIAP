@@ -2149,26 +2149,29 @@ function RekapBulananPage() {
       const isWorking = isWorkingDay(date, dateStr);
       const record = absensi.find(a => a.pegawaiId === p.id && a.tanggal === dateStr);
       
+      // Hanya tampilkan hari kerja (skip hari libur)
       if (isWorking) {
+        // Hitung statistik
         if (record?.datang) hadirCount++;
         else if (record?.sakit) sakitCount++;
         else if (record?.dinasLuar) dinasLuarCount++;
         else if (record?.keteranganIzin) izinCount++;
         else alphaCount++;
+        
+        // Tambahkan baris hanya untuk hari kerja
+        tableRows += `
+          <tr>
+            <td>${format(date, 'EEEE, dd MMMM yyyy', { locale: idLocale })}</td>
+            <td style="text-align:center;color:#16a34a;font-weight:bold">${record?.datang || '-'}</td>
+            <td style="text-align:center;color:#ca8a04">${record?.izinKeluar || '-'}</td>
+            <td style="text-align:center;color:#9333ea">${record?.izinMasuk || '-'}</td>
+            <td style="text-align:center;color:#2563eb;font-weight:bold">${record?.pulang || '-'}</td>
+            <td style="text-align:center;color:#ea580c;font-weight:bold">${record?.sakit || '-'}</td>
+            <td style="text-align:center;color:#4f46e5;font-weight:bold">${record?.dinasLuar || '-'}</td>
+            <td style="text-align:center">${record?.keteranganIzin || '-'}</td>
+          </tr>
+        `;
       }
-      
-      tableRows += `
-        <tr${!isWorking ? ' style="background-color:#f3f4f6"' : ''}>
-          <td style="font-weight:${!isWorking ? 'bold' : 'normal'}">${format(date, 'EEEE, dd MMMM yyyy', { locale: idLocale })}${!isWorking ? ' <span style="color:#ef4444;font-size:9pt">(Libur)</span>' : ''}</td>
-          <td style="text-align:center;color:#16a34a;font-weight:bold">${record?.datang || '-'}</td>
-          <td style="text-align:center;color:#ca8a04">${record?.izinKeluar || '-'}</td>
-          <td style="text-align:center;color:#9333ea">${record?.izinMasuk || '-'}</td>
-          <td style="text-align:center;color:#2563eb;font-weight:bold">${record?.pulang || '-'}</td>
-          <td style="text-align:center;color:#ea580c;font-weight:bold">${record?.sakit || '-'}</td>
-          <td style="text-align:center;color:#4f46e5;font-weight:bold">${record?.dinasLuar || '-'}</td>
-          <td style="text-align:center">${record?.keteranganIzin || '-'}</td>
-        </tr>
-      `;
     }
 
     printWindow.document.write(`
