@@ -202,7 +202,7 @@ function LoginPage({ onLogin }: { onLogin: (u: string, p: string) => boolean }) 
           </form>
 
           <div className="mt-6 text-center">
-            <p className="text-xs text-purple-300/60">© 2024 SMP Negeri 61 Bandung</p>
+            <p className="text-xs text-purple-300/60">© 2026 SMP Negeri 61 Bandung</p>
           </div>
         </div>
 
