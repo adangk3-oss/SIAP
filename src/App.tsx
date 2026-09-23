@@ -872,6 +872,7 @@ function FaceScanAbsen({
 // ============ BARCODE SCANNER ============
 function BarcodeScanner({ onScan, onScanComplete }: { onScan: (result: string) => void; onScanComplete?: () => void }) {
   const [scanning, setScanning] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [cameraType, setCameraType] = useState<'environment' | 'user'>('environment'); // 'environment' = belakang, 'user' = depan
   const [availableCameras, setAvailableCameras] = useState<MediaDeviceInfo[]>([]);
   const scannerRef = useRef<any>(null);
@@ -879,12 +880,14 @@ function BarcodeScanner({ onScan, onScanComplete }: { onScan: (result: string) =
   const isProcessingRef = useRef(false); // Prevent multiple scans
   const onScanRef = useRef(onScan);
   const onScanCompleteRef = useRef(onScanComplete);
+  const cameraTypeRef = useRef(cameraType);
 
   // Keep refs updated
   useEffect(() => {
     onScanRef.current = onScan;
     onScanCompleteRef.current = onScanComplete;
-  }, [onScan, onScanComplete]);
+    cameraTypeRef.current = cameraType;
+  }, [onScan, onScanComplete, cameraType]);
 
   // Get available cameras
   useEffect(() => {
@@ -914,12 +917,14 @@ function BarcodeScanner({ onScan, onScanComplete }: { onScan: (result: string) =
       containerRef.current.innerHTML = '';
     }
     setScanning(false);
+    setLoading(false);
     isProcessingRef.current = false;
   };
 
   const startScan = async () => {
     if (scanning || isProcessingRef.current) return;
     
+    setLoading(true);
     setScanning(true);
     isProcessingRef.current = false;
     
@@ -945,11 +950,11 @@ function BarcodeScanner({ onScan, onScanComplete }: { onScan: (result: string) =
         // Use the selected camera type with fallback
         let cameraConfig: any;
         try {
-          cameraConfig = cameraType === 'environment' 
+          cameraConfig = cameraTypeRef.current === 'environment' 
             ? { facingMode: { exact: 'environment' } }
             : { facingMode: { exact: 'user' } };
         } catch (e) {
-          cameraConfig = { facingMode: cameraType };
+          cameraConfig = { facingMode: cameraTypeRef.current };
         }
         
         await scannerRef.current.start(
@@ -980,6 +985,8 @@ function BarcodeScanner({ onScan, onScanComplete }: { onScan: (result: string) =
             // Ignore scan errors (normal when no QR code in frame)
           }
         );
+        
+        setLoading(false);
       }
     } catch (err) {
       console.error('Error starting scanner:', err);
@@ -1002,7 +1009,7 @@ function BarcodeScanner({ onScan, onScanComplete }: { onScan: (result: string) =
           
           scannerRef.current = new Html5Qrcode(scannerId);
           await scannerRef.current.start(
-            { facingMode: cameraType },
+            { facingMode: cameraTypeRef.current },
             { 
               fps: 10, 
               qrbox: { width: 250, height: 250 },
@@ -1024,10 +1031,13 @@ function BarcodeScanner({ onScan, onScanComplete }: { onScan: (result: string) =
             },
             () => {}
           );
+          
+          setLoading(false);
         }
       } catch (fallbackErr) {
         console.error('Fallback also failed:', fallbackErr);
         setScanning(false);
+        setLoading(false);
         isProcessingRef.current = false;
         alert('Tidak dapat mengakses kamera. Pastikan izin kamera diberikan dan tidak ada aplikasi lain yang menggunakan kamera.');
       }
@@ -1046,6 +1056,18 @@ function BarcodeScanner({ onScan, onScanComplete }: { onScan: (result: string) =
       setTimeout(() => startScan(), 500);
     }
   };
+
+  // Auto-start camera when component mounts
+  useEffect(() => {
+    // Wait for container to be ready
+    const timer = setTimeout(() => {
+      startScan();
+    }, 100);
+    
+    return () => {
+      clearTimeout(timer);
+    };
+  }, []);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -1122,7 +1144,16 @@ function BarcodeScanner({ onScan, onScanComplete }: { onScan: (result: string) =
         className="w-full rounded-2xl overflow-hidden min-h-[250px] flex items-center justify-center relative"
         style={{ background: 'linear-gradient(135deg, #0f0c29, #302b63, #24243e)' }}
       >
-        {!scanning && (
+        {loading && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/70 backdrop-blur-sm z-10">
+            <div className="text-center text-white">
+              <div className="w-16 h-16 border-4 border-purple-400 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+              <p className="text-sm font-medium">Mengaktifkan kamera...</p>
+              <p className="text-xs text-purple-300 mt-1">Mohon izinkan akses kamera</p>
+            </div>
+          </div>
+        )}
+        {!scanning && !loading && (
           <div className="text-center text-purple-300">
             <div className="text-5xl mb-3 animate-float">
               {cameraType === 'environment' ? '📷' : '🤳'}
@@ -1130,16 +1161,16 @@ function BarcodeScanner({ onScan, onScanComplete }: { onScan: (result: string) =
             <p className="text-sm font-medium">
               {cameraType === 'environment' ? 'Kamera Belakang' : 'Kamera Depan'}
             </p>
-            <p className="text-xs text-purple-400/60 mt-1">Klik tombol di bawah untuk mulai scan</p>
+            <p className="text-xs text-purple-400/60 mt-1">Kamera akan aktif otomatis</p>
           </div>
         )}
-        {scanning && (
+        {scanning && !loading && (
           <>
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
               <div className="w-24 h-24 border-4 border-green-400 rounded-2xl animate-pulse"
                    style={{ boxShadow: '0 0 30px rgba(74, 222, 128, 0.5)' }} />
             </div>
-            <div className="absolute top-3 right-3 px-3 py-1.5 rounded-full glass text-white text-xs font-semibold">
+            <div className="absolute top-3 right-3 px-3 py-1.5 rounded-full glass text-white text-xs font-semibold z-10">
               {cameraType === 'environment' ? '📷 Belakang' : '🤳 Depan'}
             </div>
           </>
@@ -1148,29 +1179,45 @@ function BarcodeScanner({ onScan, onScanComplete }: { onScan: (result: string) =
 
       {/* Action Buttons */}
       <div className="flex gap-2">
-        <button
-          onClick={scanning ? stopScan : startScan}
-          className="btn-futuristic flex-1 py-4 rounded-xl font-bold text-white tracking-wider uppercase text-sm transition-all hover:scale-[1.02] active:scale-95"
-          style={{
-            background: scanning 
-              ? 'linear-gradient(135deg, #dc2626, #ef4444)' 
-              : 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)',
-            boxShadow: scanning ? '0 10px 25px rgba(220, 38, 38, 0.4)' : '0 10px 25px rgba(56, 239, 125, 0.4)',
-          }}
-        >
-          {scanning ? '⏹️ Hentikan' : '🔍 Mulai Scan'}
-        </button>
-        
         {scanning && (
+          <>
+            <button
+              onClick={switchCamera}
+              className="btn-futuristic flex-1 py-4 rounded-xl font-bold text-white tracking-wider uppercase text-sm transition-all hover:scale-[1.02] active:scale-95"
+              style={{
+                background: 'linear-gradient(135deg, #667eea, #764ba2)',
+                boxShadow: '0 10px 25px rgba(102, 126, 234, 0.4)',
+              }}
+            >
+              🔄 Ganti Kamera
+            </button>
+            
+            <button
+              onClick={async () => {
+                await stopScan();
+                setTimeout(() => startScan(), 300);
+              }}
+              className="btn-futuristic py-4 px-6 rounded-xl font-bold text-white tracking-wider uppercase text-sm transition-all hover:scale-[1.02] active:scale-95"
+              style={{
+                background: 'linear-gradient(135deg, #f59e0b, #f97316)',
+                boxShadow: '0 10px 25px rgba(245, 158, 11, 0.4)',
+              }}
+            >
+              🔄 Restart
+            </button>
+          </>
+        )}
+        
+        {!scanning && !loading && (
           <button
-            onClick={switchCamera}
-            className="btn-futuristic py-4 px-6 rounded-xl font-bold text-white tracking-wider uppercase text-sm transition-all hover:scale-[1.02] active:scale-95"
+            onClick={startScan}
+            className="btn-futuristic flex-1 py-4 rounded-xl font-bold text-white tracking-wider uppercase text-sm transition-all hover:scale-[1.02] active:scale-95"
             style={{
-              background: 'linear-gradient(135deg, #667eea, #764ba2)',
-              boxShadow: '0 10px 25px rgba(102, 126, 234, 0.4)',
+              background: 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)',
+              boxShadow: '0 10px 25px rgba(56, 239, 125, 0.4)',
             }}
           >
-            🔄 Ganti
+            🔍 Aktifkan Kamera
           </button>
         )}
       </div>
