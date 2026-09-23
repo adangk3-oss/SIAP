@@ -1646,14 +1646,39 @@ function RekapHarianPage() {
     }
   };
 
-  const handleEditAbsen = (absen: AbsensiRecord) => {
-    setEditAbsenData(absen);
+  const handleEditAbsen = (pegawaiId: string) => {
+    // Cari data absensi untuk pegawai ini pada tanggal yang dipilih
+    const existingAbsen = todayAbsensi.find(a => a.pegawaiId === pegawaiId);
+    
+    if (existingAbsen) {
+      // Jika sudah ada data absensi, edit data yang ada
+      setEditAbsenData(existingAbsen);
+    } else {
+      // Jika belum ada, buat record baru
+      const newAbsen: AbsensiRecord = {
+        id: Date.now().toString(),
+        pegawaiId: pegawaiId,
+        tanggal: selectedDate,
+        status: 'hadir'
+      };
+      setEditAbsenData(newAbsen);
+    }
     setShowEditAbsen(true);
   };
 
   const handleSaveEditAbsen = () => {
     if (editAbsenData) {
-      store.updateAbsensi(editAbsenData);
+      // Cek apakah ini data baru atau data yang sudah ada
+      const existingAbsen = todayAbsensi.find(a => a.id === editAbsenData.id);
+      
+      if (existingAbsen) {
+        // Update data yang sudah ada
+        store.updateAbsensi(editAbsenData);
+      } else {
+        // Tambah data baru
+        store.addAbsensi(editAbsenData);
+      }
+      
       setShowEditAbsen(false);
       setEditAbsenData(null);
       refresh();
@@ -1778,15 +1803,15 @@ function RekapHarianPage() {
                     <td className="px-4 py-3 text-sm text-center text-indigo-600 font-medium">{absen?.dinasLuar || '-'}</td>
                     <td className="px-4 py-3 text-sm text-center text-gray-600">{absen?.keteranganIzin || '-'}</td>
                     <td className="px-4 py-3 text-center">
-                      {hasAbsen && (
-                        <div className="flex items-center justify-center gap-1">
-                          <button 
-                            onClick={() => handleEditAbsen(absen)} 
-                            className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs hover:bg-blue-200"
-                            title="Edit Absensi"
-                          >
-                            ✏️
-                          </button>
+                      <div className="flex items-center justify-center gap-1">
+                        <button 
+                          onClick={() => handleEditAbsen(p.id)} 
+                          className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs hover:bg-blue-200"
+                          title={hasAbsen ? "Edit Absensi" : "Tambah Absensi"}
+                        >
+                          {hasAbsen ? '✏️' : '➕'}
+                        </button>
+                        {hasAbsen && (
                           <button 
                             onClick={() => handleDeleteAbsensi(absen.id)} 
                             className="px-2 py-1 bg-red-100 text-red-700 rounded text-xs hover:bg-red-200"
@@ -1794,8 +1819,8 @@ function RekapHarianPage() {
                           >
                             🗑️
                           </button>
-                        </div>
-                      )}
+                        )}
+                      </div>
                     </td>
                   </tr>
                 );
@@ -1859,10 +1884,12 @@ function RekapHarianPage() {
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-2xl flex items-center justify-center"
                      style={{ background: 'linear-gradient(135deg, #667eea, #764ba2)' }}>
-                  <span className="text-2xl">✏️</span>
+                  <span className="text-2xl">{todayAbsensi.find(a => a.id === editAbsenData.id) ? '✏️' : '➕'}</span>
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-gray-800">Edit Data Absensi</h3>
+                  <h3 className="text-xl font-bold text-gray-800">
+                    {todayAbsensi.find(a => a.id === editAbsenData.id) ? 'Edit Data Absensi' : 'Tambah Data Absensi'}
+                  </h3>
                   <p className="text-sm text-gray-500">
                     {pegawai.find(p => p.id === editAbsenData.pegawaiId)?.nama || '-'} - {format(parseISO(editAbsenData.tanggal), 'dd MMMM yyyy', { locale: idLocale })}
                   </p>
@@ -1972,7 +1999,7 @@ function RekapHarianPage() {
                   boxShadow: '0 10px 25px rgba(56, 239, 125, 0.4)',
                 }}
               >
-                💾 Simpan Perubahan
+                {todayAbsensi.find(a => a.id === editAbsenData.id) ? '💾 Simpan Perubahan' : '💾 Tambah Absensi'}
               </button>
               <button
                 onClick={handleCloseEditAbsen}
