@@ -12,6 +12,7 @@ export interface Pegawai {
   nip: string;
   jabatan: string;
   idAbsen: string;
+  faceDescriptor?: number[]; // Face descriptor untuk recognition
 }
 
 export interface AbsensiRecord {

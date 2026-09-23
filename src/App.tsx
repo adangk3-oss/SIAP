@@ -7,6 +7,7 @@ import { id as idLocale } from 'date-fns/locale';
 import * as XLSX from 'xlsx';
 import { jsPDF } from 'jspdf';
 import QRCode from 'qrcode';
+import { FaceScanner } from './FaceScanner';
 
 // ============ QR CODE COMPONENT ============
 function QRCodeDisplay({ value, size = 80, level = 'H' }: { value: string; size?: number; level?: 'L' | 'M' | 'Q' | 'H' }) {
@@ -493,7 +494,7 @@ function Dashboard({ currentUser, setPage }: { currentUser: User; setPage: (p: s
 
 // ============ ABSEN PAGE ============
 function AbsenPage() {
-  const [scanMode, setScanMode] = useState(false);
+  const [inputMode, setInputMode] = useState<'manual' | 'qr' | 'face'>('manual');
   const [manualId, setManualId] = useState('');
   const [absenType, setAbsenType] = useState<'datang' | 'pulang' | 'izinKeluar' | 'izinMasuk'>('datang');
   const [keterangan, setKeterangan] = useState('');
@@ -729,33 +730,44 @@ function AbsenPage() {
             </span>
             Input Absensi
           </h3>
-          <div className="flex gap-2 mb-5 p-1 rounded-xl"
+          <div className="flex gap-1 mb-5 p-1 rounded-xl"
                style={{ background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(168, 85, 247, 0.1))' }}>
             <button
-              onClick={() => setScanMode(false)}
-              className={`flex-1 py-2.5 rounded-lg font-semibold text-sm transition-all ${
-                !scanMode 
+              onClick={() => setInputMode('manual')}
+              className={`flex-1 py-2.5 rounded-lg font-semibold text-xs transition-all ${
+                inputMode === 'manual' 
                   ? 'text-white shadow-lg' 
                   : 'text-gray-600 hover:text-gray-800'
               }`}
-              style={!scanMode ? { background: 'linear-gradient(135deg, #667eea, #764ba2)' } : {}}
+              style={inputMode === 'manual' ? { background: 'linear-gradient(135deg, #667eea, #764ba2)' } : {}}
             >
               ⌨️ Manual
             </button>
             <button
-              onClick={() => setScanMode(true)}
-              className={`flex-1 py-2.5 rounded-lg font-semibold text-sm transition-all ${
-                scanMode 
+              onClick={() => setInputMode('qr')}
+              className={`flex-1 py-2.5 rounded-lg font-semibold text-xs transition-all ${
+                inputMode === 'qr' 
                   ? 'text-white shadow-lg' 
                   : 'text-gray-600 hover:text-gray-800'
               }`}
-              style={scanMode ? { background: 'linear-gradient(135deg, #11998e, #38ef7d)' } : {}}
+              style={inputMode === 'qr' ? { background: 'linear-gradient(135deg, #11998e, #38ef7d)' } : {}}
             >
-              📷 Scan QR
+              📷 QR
+            </button>
+            <button
+              onClick={() => setInputMode('face')}
+              className={`flex-1 py-2.5 rounded-lg font-semibold text-xs transition-all ${
+                inputMode === 'face' 
+                  ? 'text-white shadow-lg' 
+                  : 'text-gray-600 hover:text-gray-800'
+              }`}
+              style={inputMode === 'face' ? { background: 'linear-gradient(135deg, #f093fb, #f5576c)' } : {}}
+            >
+              👤 Wajah
             </button>
           </div>
 
-          {!scanMode ? (
+          {inputMode === 'manual' && (
             <form onSubmit={handleManualSubmit} className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-purple-600 mb-2 uppercase tracking-wider">ID Absen Pegawai</label>
@@ -776,19 +788,83 @@ function AbsenPage() {
                 🚀 Proses Absensi
               </button>
             </form>
-          ) : (
+          )}
+
+          {inputMode === 'qr' && (
             <BarcodeScanner 
               onScan={handleScan}
               onScanComplete={() => {
-                // Kembali ke mode manual setelah scan selesai
                 setTimeout(() => {
-                  setScanMode(false);
+                  setInputMode('manual');
                 }, 1500);
+              }}
+            />
+          )}
+
+          {inputMode === 'face' && (
+            <FaceScanAbsen
+              pegawaiList={pegawai}
+              onRecognize={(pegawaiId: string, nama: string) => {
+                processAbsen(pegawaiId);
+                setTimeout(() => {
+                  setInputMode('manual');
+                }, 1500);
+              }}
+              onError={(error: string) => {
+                setMessage(error);
+                setMessageType('error');
               }}
             />
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+// ============ FACE SCAN ABSEN ============
+function FaceScanAbsen({ 
+  pegawaiList, 
+  onRecognize, 
+  onError 
+}: { 
+  pegawaiList: Pegawai[]; 
+  onRecognize: (pegawaiId: string, nama: string) => void;
+  onError: (error: string) => void;
+}) {
+  const pegawaiWithFaces = pegawaiList.filter(p => p.faceDescriptor && p.faceDescriptor.length > 0);
+
+  if (pegawaiWithFaces.length === 0) {
+    return (
+      <div className="text-center py-8">
+        <div className="text-5xl mb-4">👤</div>
+        <h3 className="text-lg font-bold text-gray-800 mb-2">Belum Ada Data Wajah</h3>
+        <p className="text-sm text-gray-500 mb-4">
+          Belum ada pegawai yang mendaftarkan wajah.<br/>
+          Silakan daftarkan wajah di menu Data Pegawai terlebih dahulu.
+        </p>
+        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-yellow-100 text-yellow-800 text-xs font-semibold">
+          <span>💡</span>
+          <span>{pegawaiList.length} pegawai terdaftar, {pegawaiWithFaces.length} sudah enroll wajah</span>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-green-50 border border-green-200">
+        <span className="text-sm">✅</span>
+        <span className="text-xs font-semibold text-green-800">
+          {pegawaiWithFaces.length} pegawai sudah terdaftar wajah
+        </span>
+      </div>
+      <FaceScanner
+        mode="recognize"
+        pegawaiList={pegawaiWithFaces}
+        onRecognizeComplete={onRecognize}
+        onError={onError}
+      />
     </div>
   );
 }
@@ -1059,6 +1135,7 @@ function PegawaiPage() {
   const [form, setForm] = useState({ nama: '', nip: '', jabatan: '', idAbsen: '' });
   const [showCard, setShowCard] = useState<Pegawai | null>(null);
   const [previewBarcode, setPreviewBarcode] = useState<Pegawai | null>(null);
+  const [enrollFace, setEnrollFace] = useState<Pegawai | null>(null);
 
   const refresh = () => setPegawai(store.getPegawai());
 
@@ -1401,6 +1478,7 @@ function PegawaiPage() {
                 <th className="px-4 py-3 text-left text-sm font-semibold text-blue-800">Jabatan</th>
                 <th className="px-4 py-3 text-left text-sm font-semibold text-blue-800">ID Absen</th>
                 <th className="px-4 py-3 text-center text-sm font-semibold text-blue-800">QR Code</th>
+                <th className="px-4 py-3 text-center text-sm font-semibold text-blue-800">Wajah</th>
                 <th className="px-4 py-3 text-center text-sm font-semibold text-blue-800">Aksi</th>
               </tr>
             </thead>
@@ -1418,7 +1496,21 @@ function PegawaiPage() {
                     </div>
                   </td>
                   <td className="px-4 py-3 text-center">
+                    {p.faceDescriptor && p.faceDescriptor.length > 0 ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-green-100 text-green-700 text-xs font-semibold">
+                        ✅ Terdaftar
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-gray-100 text-gray-500 text-xs font-semibold">
+                        ❌ Belum
+                      </span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3 text-center">
                     <div className="flex items-center justify-center gap-2 flex-wrap">
+                      <button onClick={() => setEnrollFace(p)} className="px-2 py-1 bg-pink-100 text-pink-700 rounded text-xs hover:bg-pink-200" title="Enroll Wajah">
+                        👤 Wajah
+                      </button>
                       <button onClick={() => setPreviewBarcode(p)} className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs hover:bg-blue-200" title="Preview QR Code">
                         👁️ Preview
                       </button>
@@ -1445,7 +1537,7 @@ function PegawaiPage() {
                 </tr>
               ))}
               {pegawai.length === 0 && (
-                <tr><td colSpan={7} className="px-4 py-8 text-center text-gray-400">Belum ada data pegawai</td></tr>
+                <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-400">Belum ada data pegawai</td></tr>
               )}
             </tbody>
           </table>
@@ -1488,6 +1580,45 @@ function PegawaiPage() {
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Enroll Face Modal */}
+      {enrollFace && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-3xl shadow-2xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center"
+                     style={{ background: 'linear-gradient(135deg, #f093fb, #f5576c)' }}>
+                  <span className="text-xl">👤</span>
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-gray-800">Enroll Wajah</h3>
+                  <p className="text-xs text-gray-500">{enrollFace.nama}</p>
+                </div>
+              </div>
+              <button onClick={() => setEnrollFace(null)} className="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+            </div>
+            
+            <FaceScanner
+              mode="enroll"
+              pegawai={enrollFace}
+              onEnrollComplete={(descriptor) => {
+                // Save face descriptor to pegawai
+                const updatedPegawai = { ...enrollFace, faceDescriptor: descriptor };
+                store.updatePegawai(updatedPegawai);
+                refresh();
+                
+                // Show success message
+                alert(`✅ Wajah ${enrollFace.nama} berhasil didaftarkan!`);
+                setEnrollFace(null);
+              }}
+              onError={(error) => {
+                alert(`❌ Error: ${error}`);
+              }}
+            />
           </div>
         </div>
       )}
