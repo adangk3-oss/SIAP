@@ -2068,7 +2068,7 @@ function RekapBulananPage() {
   };
 
   const getSummary = (pegawaiId: string) => {
-    let hadir = 0, izin = 0, sakit = 0, alpha = 0, dinasLuar = 0;
+    let hadir = 0, izin = 0, sakit = 0, alpha = 0, dinasLuar = 0, tanpaKeterangan = 0;
     for (let d = 1; d <= daysInMonth; d++) {
       const dateStr = `${selectedMonth}-${String(d).padStart(2, '0')}`;
       const date = new Date(year, month - 1, d);
@@ -2077,10 +2077,11 @@ function RekapBulananPage() {
       if (record?.datang) hadir++;
       else if (record?.sakit) sakit++;
       else if (record?.dinasLuar) dinasLuar++;
+      else if (record?.tanpaKeterangan) tanpaKeterangan++;
       else if (record?.keteranganIzin) izin++;
       else alpha++;
     }
-    return { hadir, izin, sakit, alpha, dinasLuar };
+    return { hadir, izin, sakit, alpha, dinasLuar, tanpaKeterangan };
   };
 
   const exportToExcel = () => {
@@ -2092,13 +2093,13 @@ function RekapBulananPage() {
     
     filteredPegawai.forEach(p => {
       data.push([p.nama, `NIP: ${p.nip}`, p.jabatan]);
-      const header = ['Tanggal', 'Datang', 'Izin Keluar', 'Izin Masuk', 'Pulang', 'Sakit (S)', 'Dinas Luar (DL)', 'Keterangan'];
+      const header = ['Tanggal', 'Datang', 'Izin Keluar', 'Izin Masuk', 'Pulang', 'Sakit (S)', 'Dinas Luar (DL)', 'Tanpa Keterangan (TK)', 'Keterangan'];
       data.push(header);
       for (let d = 1; d <= daysInMonth; d++) {
         const dateStr = `${selectedMonth}-${String(d).padStart(2, '0')}`;
         const record = getAbsensiForDay(p.id, d);
         if (record) {
-          data.push([dateStr, record.datang || '-', record.izinKeluar || '-', record.izinMasuk || '-', record.pulang || '-', record.sakit || '-', record.dinasLuar || '-', record.keteranganIzin || '-']);
+          data.push([dateStr, record.datang || '-', record.izinKeluar || '-', record.izinMasuk || '-', record.pulang || '-', record.sakit || '-', record.dinasLuar || '-', record.tanpaKeterangan || '-', record.keteranganIzin || '-']);
         }
       }
       data.push([]);
@@ -2112,14 +2113,14 @@ function RekapBulananPage() {
 
   const exportToCSV = () => {
     const data: string[][] = [];
-    data.push(['Nama', 'NIP', 'Jabatan', 'Tanggal', 'Datang', 'Izin Keluar', 'Izin Masuk', 'Pulang', 'Sakit (S)', 'Dinas Luar (DL)', 'Keterangan']);
+    data.push(['Nama', 'NIP', 'Jabatan', 'Tanggal', 'Datang', 'Izin Keluar', 'Izin Masuk', 'Pulang', 'Sakit (S)', 'Dinas Luar (DL)', 'Tanpa Keterangan (TK)', 'Keterangan']);
     
     filteredPegawai.forEach(p => {
       for (let d = 1; d <= daysInMonth; d++) {
         const dateStr = `${selectedMonth}-${String(d).padStart(2, '0')}`;
         const record = getAbsensiForDay(p.id, d);
         if (record) {
-          data.push([p.nama, p.nip, p.jabatan, dateStr, record.datang || '', record.izinKeluar || '', record.izinMasuk || '', record.pulang || '', record.sakit || '', record.dinasLuar || '', record.keteranganIzin || '']);
+          data.push([p.nama, p.nip, p.jabatan, dateStr, record.datang || '', record.izinKeluar || '', record.izinMasuk || '', record.pulang || '', record.sakit || '', record.dinasLuar || '', record.tanpaKeterangan || '', record.keteranganIzin || '']);
         }
       }
     });
@@ -2141,7 +2142,7 @@ function RekapBulananPage() {
     if (!printWindow) return;
 
     let tableRows = '';
-    let hadirCount = 0, izinCount = 0, sakitCount = 0, dinasLuarCount = 0, alphaCount = 0;
+    let hadirCount = 0, izinCount = 0, sakitCount = 0, dinasLuarCount = 0, tanpaKeteranganCount = 0, alphaCount = 0;
     
     for (let d = 1; d <= daysInMonth; d++) {
       const dateStr = `${selectedMonth}-${String(d).padStart(2, '0')}`;
@@ -2155,6 +2156,7 @@ function RekapBulananPage() {
         if (record?.datang) hadirCount++;
         else if (record?.sakit) sakitCount++;
         else if (record?.dinasLuar) dinasLuarCount++;
+        else if (record?.tanpaKeterangan) tanpaKeteranganCount++;
         else if (record?.keteranganIzin) izinCount++;
         else alphaCount++;
         
@@ -2168,6 +2170,7 @@ function RekapBulananPage() {
             <td style="text-align:center;color:#2563eb;font-weight:bold">${record?.pulang || '-'}</td>
             <td style="text-align:center;color:#ea580c;font-weight:bold">${record?.sakit || '-'}</td>
             <td style="text-align:center;color:#4f46e5;font-weight:bold">${record?.dinasLuar || '-'}</td>
+            <td style="text-align:center;color:#dc2626;font-weight:bold">${record?.tanpaKeterangan || '-'}</td>
             <td style="text-align:center">${record?.keteranganIzin || '-'}</td>
           </tr>
         `;
@@ -2237,13 +2240,14 @@ function RekapBulananPage() {
           <table class="absensi">
             <thead>
               <tr>
-                <th style="width:22%">Tanggal</th>
-                <th style="width:10%">Datang</th>
-                <th style="width:11%">Izin Keluar</th>
-                <th style="width:11%">Izin Masuk</th>
-                <th style="width:10%">Pulang</th>
-                <th style="width:10%">Sakit (S)</th>
-                <th style="width:11%">Dinas Luar (DL)</th>
+                <th style="width:18%">Tanggal</th>
+                <th style="width:9%">Datang</th>
+                <th style="width:10%">Izin Keluar</th>
+                <th style="width:10%">Izin Masuk</th>
+                <th style="width:9%">Pulang</th>
+                <th style="width:9%">Sakit (S)</th>
+                <th style="width:10%">Dinas Luar (DL)</th>
+                <th style="width:10%">Tanpa Ket. (TK)</th>
                 <th style="width:15%">Keterangan</th>
               </tr>
             </thead>
@@ -2265,9 +2269,10 @@ function RekapBulananPage() {
               <tr>
                 <td class="label">Total Dinas Luar:</td>
                 <td style="color:#4f46e5;font-weight:bold;font-size:14pt">${dinasLuarCount} hari</td>
+                <td class="label">Total Tanpa Ket.:</td>
+                <td style="color:#dc2626;font-weight:bold;font-size:14pt">${tanpaKeteranganCount} hari</td>
                 <td class="label">Total Alpha:</td>
-                <td style="color:#dc2626;font-weight:bold;font-size:14pt">${alphaCount} hari</td>
-                <td colspan="2"></td>
+                <td style="color:#991b1b;font-weight:bold;font-size:14pt">${alphaCount} hari</td>
               </tr>
             </table>
           </div>
@@ -2357,6 +2362,7 @@ function RekapBulananPage() {
                 <th>Izin</th>
                 <th>Sakit</th>
                 <th>Dinas Luar</th>
+                <th>Tanpa Ket.</th>
                 <th>Alpha</th>
               </tr>
             </thead>
@@ -2372,7 +2378,8 @@ function RekapBulananPage() {
                   <td style="text-align:center;color:orange">${s.izin}</td>
                   <td style="text-align:center;color:#ea580c;font-weight:bold">${s.sakit}</td>
                   <td style="text-align:center;color:#4f46e5;font-weight:bold">${s.dinasLuar}</td>
-                  <td style="text-align:center;color:red">${s.alpha}</td>
+                  <td style="text-align:center;color:#dc2626;font-weight:bold">${s.tanpaKeterangan}</td>
+                  <td style="text-align:center;color:#6b7280">${s.alpha}</td>
                 </tr>`;
               }).join('')}
             </tbody>
@@ -2453,7 +2460,8 @@ function RekapBulananPage() {
                 <th className="px-4 py-3 text-center text-sm font-semibold text-yellow-700">Izin</th>
                 <th className="px-4 py-3 text-center text-sm font-semibold text-orange-700">Sakit</th>
                 <th className="px-4 py-3 text-center text-sm font-semibold text-indigo-700">Dinas Luar</th>
-                <th className="px-4 py-3 text-center text-sm font-semibold text-red-700">Alpha</th>
+                <th className="px-4 py-3 text-center text-sm font-semibold text-red-700">Tanpa Keterangan</th>
+                <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700">Alpha</th>
               </tr>
             </thead>
             <tbody>
@@ -2477,13 +2485,16 @@ function RekapBulananPage() {
                       <span className="bg-indigo-100 text-indigo-700 px-2 py-1 rounded-full text-xs font-bold">{summary.dinasLuar}</span>
                     </td>
                     <td className="px-4 py-3 text-sm text-center">
-                      <span className="bg-red-100 text-red-700 px-2 py-1 rounded-full text-xs font-bold">{summary.alpha}</span>
+                      <span className="bg-red-100 text-red-700 px-2 py-1 rounded-full text-xs font-bold">{summary.tanpaKeterangan}</span>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-center">
+                      <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded-full text-xs font-bold">{summary.alpha}</span>
                     </td>
                   </tr>
                 );
               })}
               {filteredPegawai.length === 0 && (
-                <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-400">Tidak ada data</td></tr>
+                <tr><td colSpan={9} className="px-4 py-8 text-center text-gray-400">Tidak ada data</td></tr>
               )}
             </tbody>
           </table>
@@ -2531,6 +2542,7 @@ function RekapBulananPage() {
                   <th className="px-4 py-3 text-center text-sm font-semibold text-blue-700">Pulang</th>
                   <th className="px-4 py-3 text-center text-sm font-semibold text-orange-700">Sakit (S)</th>
                   <th className="px-4 py-3 text-center text-sm font-semibold text-indigo-700">Dinas Luar (DL)</th>
+                  <th className="px-4 py-3 text-center text-sm font-semibold text-red-700">Tanpa Keterangan (TK)</th>
                   <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700">Keterangan</th>
                 </tr>
               </thead>
@@ -2538,7 +2550,7 @@ function RekapBulananPage() {
                 {(() => {
                   const rows: { date: string; record: AbsensiRecord | undefined }[] = [];
                   const p = filteredPegawai[0];
-                  if (!p) return <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-400">Pegawai tidak ditemukan</td></tr>;
+                  if (!p) return <tr><td colSpan={9} className="px-4 py-8 text-center text-gray-400">Pegawai tidak ditemukan</td></tr>;
                   
                   for (let d = 1; d <= daysInMonth; d++) {
                     const dateStr = `${selectedMonth}-${String(d).padStart(2, '0')}`;
@@ -2551,7 +2563,7 @@ function RekapBulananPage() {
                   }
                   
                   if (rows.length === 0) {
-                    return <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-400">Belum ada data absensi</td></tr>;
+                    return <tr><td colSpan={9} className="px-4 py-8 text-center text-gray-400">Belum ada data absensi</td></tr>;
                   }
                   
                   return rows.map((row, idx) => {
@@ -2572,6 +2584,7 @@ function RekapBulananPage() {
                         <td className="px-4 py-3 text-sm text-center text-blue-600 font-semibold">{row.record?.pulang || '-'}</td>
                         <td className="px-4 py-3 text-sm text-center text-orange-600 font-semibold">{row.record?.sakit || '-'}</td>
                         <td className="px-4 py-3 text-sm text-center text-indigo-600 font-semibold">{row.record?.dinasLuar || '-'}</td>
+                        <td className="px-4 py-3 text-sm text-center text-red-600 font-semibold">{row.record?.tanpaKeterangan || '-'}</td>
                         <td className="px-4 py-3 text-sm text-center">{row.record?.keteranganIzin || '-'}</td>
                       </tr>
                     );
