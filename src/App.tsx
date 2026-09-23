@@ -219,6 +219,8 @@ function LoginPage({ onLogin }: { onLogin: (u: string, p: string) => boolean }) 
 
 // ============ SIDEBAR ============
 function Sidebar({ currentUser, page, setPage, onLogout, sidebarOpen, setSidebarOpen }: any) {
+  const settings = store.getSettings();
+  
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: '📊', roles: ['admin', 'operator', 'user'] },
     { id: 'absen', label: 'Absensi', icon: '✅', roles: ['admin', 'operator', 'user'] },
@@ -244,13 +246,21 @@ function Sidebar({ currentUser, page, setPage, onLogout, sidebarOpen, setSidebar
         {/* Header */}
         <div className="p-4 border-b border-white/10">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+            <div className="w-16 h-16 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden"
                  style={{ background: 'linear-gradient(135deg, #6366f1, #a855f7)' }}>
-              <span className="text-lg">🏫</span>
+              {settings.identitasSekolah.logo ? (
+                <img 
+                  src={settings.identitasSekolah.logo} 
+                  alt="Logo Sekolah" 
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <span className="text-2xl">🏫</span>
+              )}
             </div>
             <div className={`${!sidebarOpen && 'md:hidden'}`}>
-              <h2 className="font-bold text-sm tracking-wide">SMPN 61</h2>
-              <p className="text-[10px] text-purple-300 tracking-wider">BANDUNG</p>
+              <h2 className="font-bold text-base tracking-wide">SMPN 61</h2>
+              <p className="text-xs text-purple-300 tracking-wider">BANDUNG</p>
             </div>
           </div>
         </div>
