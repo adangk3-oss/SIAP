@@ -1768,10 +1768,8 @@ function RekapHarianPage() {
                 <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700">Izin Masuk</th>
                 <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700">Pulang</th>
                 <th className="px-4 py-3 text-center text-sm font-semibold text-orange-700">Sakit (S)</th>
-                <th className="px-4 py-3 text-center text-sm font-semibold text-red-700">Tanpa Keterangan (TK)</th>
                 <th className="px-4 py-3 text-center text-sm font-semibold text-indigo-700">Dinas Luar (DL)</th>
                 <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700">Keterangan</th>
-                <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700">Aksi</th>
               </tr>
             </thead>
             <tbody>
@@ -1799,34 +1797,13 @@ function RekapHarianPage() {
                     <td className="px-4 py-3 text-sm text-center text-purple-600 font-medium">{absen?.izinMasuk || '-'}</td>
                     <td className="px-4 py-3 text-sm text-center text-blue-600 font-medium">{absen?.pulang || '-'}</td>
                     <td className="px-4 py-3 text-sm text-center text-orange-600 font-medium">{absen?.sakit || '-'}</td>
-                    <td className="px-4 py-3 text-sm text-center text-red-600 font-medium">{absen?.tanpaKeterangan || '-'}</td>
                     <td className="px-4 py-3 text-sm text-center text-indigo-600 font-medium">{absen?.dinasLuar || '-'}</td>
                     <td className="px-4 py-3 text-sm text-center text-gray-600">{absen?.keteranganIzin || '-'}</td>
-                    <td className="px-4 py-3 text-center">
-                      <div className="flex items-center justify-center gap-1">
-                        <button 
-                          onClick={() => handleEditAbsen(p.id)} 
-                          className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs hover:bg-blue-200"
-                          title={hasAbsen ? "Edit Absensi" : "Tambah Absensi"}
-                        >
-                          {hasAbsen ? '✏️' : '➕'}
-                        </button>
-                        {hasAbsen && (
-                          <button 
-                            onClick={() => handleDeleteAbsensi(absen.id)} 
-                            className="px-2 py-1 bg-red-100 text-red-700 rounded text-xs hover:bg-red-200"
-                            title="Hapus Absensi"
-                          >
-                            🗑️
-                          </button>
-                        )}
-                      </div>
-                    </td>
                   </tr>
                 );
               })}
               {pegawai.length === 0 && (
-                <tr><td colSpan={12} className="px-4 py-8 text-center text-gray-400">Belum ada data pegawai</td></tr>
+                <tr><td colSpan={10} className="px-4 py-8 text-center text-gray-400">Belum ada data pegawai</td></tr>
               )}
             </tbody>
           </table>
