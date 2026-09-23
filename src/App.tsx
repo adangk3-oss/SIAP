@@ -2228,10 +2228,13 @@ function RekapBulananPage() {
           <style>
             @page { size: A4; margin: 1.5cm; }
             body { font-family: 'Times New Roman', serif; font-size: 11pt; }
-            .header { text-align: center; margin-bottom: 20px; }
-            .header h1 { font-size: 14pt; margin: 0; }
-            .header h2 { font-size: 12pt; margin: 5px 0; }
-            .header p { font-size: 10pt; margin: 2px 0; }
+            .header { display: flex; align-items: center; margin-bottom: 20px; gap: 20px; }
+            .header-logo { flex-shrink: 0; }
+            .header-logo img { width: 80px; height: 80px; object-fit: contain; }
+            .header-info { flex: 1; text-align: center; }
+            .header-info h1 { font-size: 14pt; margin: 0; }
+            .header-info h2 { font-size: 12pt; margin: 5px 0; }
+            .header-info p { font-size: 10pt; margin: 2px 0; }
             .pegawai-info { margin: 15px 0; padding: 10px; border: 1px solid #333; background: #f9fafb; }
             .pegawai-info table { width: 100%; }
             .pegawai-info td { padding: 3px 0; }
@@ -2251,9 +2254,14 @@ function RekapBulananPage() {
         </head>
         <body>
           <div class="header">
-            <h1>${settings.identitasSekolah.nama}</h1>
-            <p>${settings.identitasSekolah.alamat}</p>
-            <p>NPSN: ${settings.identitasSekolah.npsn}</p>
+            <div class="header-logo">
+              ${settings.identitasSekolah.logo ? `<img src="${settings.identitasSekolah.logo}" alt="Logo Sekolah">` : ''}
+            </div>
+            <div class="header-info">
+              <h1>${settings.identitasSekolah.nama}</h1>
+              <p>${settings.identitasSekolah.alamat}</p>
+              <p>NPSN: ${settings.identitasSekolah.npsn}</p>
+            </div>
           </div>
           
           <div class="pegawai-info">
@@ -2371,10 +2379,13 @@ function RekapBulananPage() {
           <style>
             @page { size: A4; margin: 1.5cm; }
             body { font-family: 'Times New Roman', serif; font-size: 12pt; }
-            .header { text-align: center; margin-bottom: 20px; }
-            .header h1 { font-size: 14pt; margin: 0; }
-            .header h2 { font-size: 12pt; margin: 5px 0; }
-            .header p { font-size: 10pt; margin: 2px 0; }
+            .header { display: flex; align-items: center; margin-bottom: 20px; gap: 20px; }
+            .header-logo { flex-shrink: 0; }
+            .header-logo img { width: 80px; height: 80px; object-fit: contain; }
+            .header-info { flex: 1; text-align: center; }
+            .header-info h1 { font-size: 14pt; margin: 0; }
+            .header-info h2 { font-size: 12pt; margin: 5px 0; }
+            .header-info p { font-size: 10pt; margin: 2px 0; }
             table { width: 100%; border-collapse: collapse; margin: 20px 0; }
             th, td { border: 1px solid #333; padding: 6px 8px; font-size: 10pt; }
             th { background: #1e40af; color: white; }
@@ -2387,9 +2398,14 @@ function RekapBulananPage() {
         </head>
         <body>
           <div class="header">
-            <h1>${settings.identitasSekolah.nama}</h1>
-            <p>${settings.identitasSekolah.alamat}</p>
-            <p>NPSN: ${settings.identitasSekolah.npsn}</p>
+            <div class="header-logo">
+              ${settings.identitasSekolah.logo ? `<img src="${settings.identitasSekolah.logo}" alt="Logo Sekolah">` : ''}
+            </div>
+            <div class="header-info">
+              <h1>${settings.identitasSekolah.nama}</h1>
+              <p>${settings.identitasSekolah.alamat}</p>
+              <p>NPSN: ${settings.identitasSekolah.npsn}</p>
+            </div>
           </div>
           <div class="title">
             REKAP ABSENSI PEGAWAI<br>
