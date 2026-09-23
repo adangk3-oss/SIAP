@@ -93,6 +93,7 @@ function LoginPage({ onLogin }: { onLogin: (u: string, p: string) => boolean }) 
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const settings = store.getSettings();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -128,19 +129,27 @@ function LoginPage({ onLogin }: { onLogin: (u: string, p: string) => boolean }) 
           {/* Logo */}
           <div className="text-center mb-8">
             <div className="relative inline-block">
-              <div className="w-24 h-24 rounded-2xl flex items-center justify-center mx-auto mb-4 animate-float"
+              <div className="w-24 h-24 rounded-2xl flex items-center justify-center mx-auto mb-4 animate-float overflow-hidden"
                    style={{
                      background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #ec4899 100%)',
                      boxShadow: '0 10px 40px rgba(139, 92, 246, 0.5)',
                    }}>
-                <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                </svg>
+                {settings.identitasSekolah.logo ? (
+                  <img 
+                    src={settings.identitasSekolah.logo} 
+                    alt="Logo Sekolah" 
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                )}
               </div>
               <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-400 rounded-full animate-pulse"
                    style={{ boxShadow: '0 0 10px rgba(74, 222, 128, 0.8)' }} />
             </div>
-            <h1 className="text-2xl font-black text-white neon-text tracking-wide">SMP NEGERI 61</h1>
+            <h1 className="text-2xl font-black text-white neon-text tracking-wide">{settings.identitasSekolah.nama || 'SMP NEGERI 61'}</h1>
             <h2 className="text-lg font-bold text-purple-300 tracking-widest">BANDUNG</h2>
             <div className="mt-3 inline-flex items-center gap-2 px-4 py-1.5 rounded-full glass">
               <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
