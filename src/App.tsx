@@ -876,6 +876,15 @@ function BarcodeScanner({ onScan, onScanComplete }: { onScan: (result: string) =
   const [availableCameras, setAvailableCameras] = useState<MediaDeviceInfo[]>([]);
   const scannerRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const isProcessingRef = useRef(false); // Prevent multiple scans
+  const onScanRef = useRef(onScan);
+  const onScanCompleteRef = useRef(onScanComplete);
+
+  // Keep refs updated
+  useEffect(() => {
+    onScanRef.current = onScan;
+    onScanCompleteRef.current = onScanComplete;
+  }, [onScan, onScanComplete]);
 
   // Get available cameras
   useEffect(() => {
@@ -891,83 +900,6 @@ function BarcodeScanner({ onScan, onScanComplete }: { onScan: (result: string) =
     getCameras();
   }, []);
 
-  const startScan = async () => {
-    setScanning(true);
-    try {
-      const { Html5Qrcode } = await import('html5-qrcode');
-      
-      // Create a unique ID for this scanner instance
-      const scannerId = `barcode-reader-${Date.now()}`;
-      
-      // Create a container div for the scanner
-      if (containerRef.current) {
-        const scannerDiv = document.createElement('div');
-        scannerDiv.id = scannerId;
-        scannerDiv.style.width = '100%';
-        scannerDiv.style.height = '100%';
-        containerRef.current.innerHTML = '';
-        containerRef.current.appendChild(scannerDiv);
-        
-        scannerRef.current = new Html5Qrcode(scannerId);
-        
-        // Use the selected camera type
-        const cameraConfig = cameraType === 'environment' 
-          ? { facingMode: { exact: 'environment' } }
-          : { facingMode: { exact: 'user' } };
-        
-        await scannerRef.current.start(
-          cameraConfig,
-          { fps: 10, qrbox: { width: 250, height: 250 } },
-          (decodedText: string) => {
-            onScan(decodedText);
-            stopScan();
-            // Panggil callback setelah scan selesai
-            if (onScanComplete) {
-              onScanComplete();
-            }
-          },
-          () => {}
-        );
-      }
-    } catch (err) {
-      console.error(err);
-      setScanning(false);
-      
-      // Fallback: try without exact facing mode
-      try {
-        const { Html5Qrcode } = await import('html5-qrcode');
-        const scannerId = `barcode-reader-fallback-${Date.now()}`;
-        
-        if (containerRef.current) {
-          const scannerDiv = document.createElement('div');
-          scannerDiv.id = scannerId;
-          scannerDiv.style.width = '100%';
-          scannerDiv.style.height = '100%';
-          containerRef.current.innerHTML = '';
-          containerRef.current.appendChild(scannerDiv);
-          
-          scannerRef.current = new Html5Qrcode(scannerId);
-          await scannerRef.current.start(
-            { facingMode: cameraType },
-            { fps: 10, qrbox: { width: 250, height: 250 } },
-            (decodedText: string) => {
-              onScan(decodedText);
-              stopScan();
-              // Panggil callback setelah scan selesai
-              if (onScanComplete) {
-                onScanComplete();
-              }
-            },
-            () => {}
-          );
-        }
-      } catch (fallbackErr) {
-        console.error('Fallback also failed:', fallbackErr);
-        alert('Tidak dapat mengakses kamera. Pastikan izin kamera diberikan.');
-      }
-    }
-  };
-
   const stopScan = async () => {
     if (scannerRef.current) {
       try {
@@ -982,6 +914,124 @@ function BarcodeScanner({ onScan, onScanComplete }: { onScan: (result: string) =
       containerRef.current.innerHTML = '';
     }
     setScanning(false);
+    isProcessingRef.current = false;
+  };
+
+  const startScan = async () => {
+    if (scanning || isProcessingRef.current) return;
+    
+    setScanning(true);
+    isProcessingRef.current = false;
+    
+    try {
+      const { Html5Qrcode } = await import('html5-qrcode');
+      
+      // Create a unique ID for this scanner instance
+      const scannerId = `barcode-reader-${Date.now()}`;
+      
+      // Create a container div for the scanner
+      if (containerRef.current) {
+        // Clear any existing content
+        containerRef.current.innerHTML = '';
+        
+        const scannerDiv = document.createElement('div');
+        scannerDiv.id = scannerId;
+        scannerDiv.style.width = '100%';
+        scannerDiv.style.height = '100%';
+        containerRef.current.appendChild(scannerDiv);
+        
+        scannerRef.current = new Html5Qrcode(scannerId);
+        
+        // Use the selected camera type with fallback
+        let cameraConfig: any;
+        try {
+          cameraConfig = cameraType === 'environment' 
+            ? { facingMode: { exact: 'environment' } }
+            : { facingMode: { exact: 'user' } };
+        } catch (e) {
+          cameraConfig = { facingMode: cameraType };
+        }
+        
+        await scannerRef.current.start(
+          cameraConfig,
+          { 
+            fps: 10, 
+            qrbox: { width: 250, height: 250 },
+            aspectRatio: 1.0
+          },
+          (decodedText: string) => {
+            // Prevent multiple scans
+            if (isProcessingRef.current) return;
+            isProcessingRef.current = true;
+            
+            // Call onScan first
+            onScanRef.current(decodedText);
+            
+            // Stop scanner and call completion callback
+            stopScan().then(() => {
+              if (onScanCompleteRef.current) {
+                setTimeout(() => {
+                  onScanCompleteRef.current!();
+                }, 100);
+              }
+            });
+          },
+          (errorMessage: string) => {
+            // Ignore scan errors (normal when no QR code in frame)
+          }
+        );
+      }
+    } catch (err) {
+      console.error('Error starting scanner:', err);
+      setScanning(false);
+      isProcessingRef.current = false;
+      
+      // Fallback: try without exact facing mode
+      try {
+        const { Html5Qrcode } = await import('html5-qrcode');
+        const scannerId = `barcode-reader-fallback-${Date.now()}`;
+        
+        if (containerRef.current) {
+          containerRef.current.innerHTML = '';
+          
+          const scannerDiv = document.createElement('div');
+          scannerDiv.id = scannerId;
+          scannerDiv.style.width = '100%';
+          scannerDiv.style.height = '100%';
+          containerRef.current.appendChild(scannerDiv);
+          
+          scannerRef.current = new Html5Qrcode(scannerId);
+          await scannerRef.current.start(
+            { facingMode: cameraType },
+            { 
+              fps: 10, 
+              qrbox: { width: 250, height: 250 },
+              aspectRatio: 1.0
+            },
+            (decodedText: string) => {
+              if (isProcessingRef.current) return;
+              isProcessingRef.current = true;
+              
+              onScanRef.current(decodedText);
+              
+              stopScan().then(() => {
+                if (onScanCompleteRef.current) {
+                  setTimeout(() => {
+                    onScanCompleteRef.current!();
+                  }, 100);
+                }
+              });
+            },
+            () => {}
+          );
+        }
+      } catch (fallbackErr) {
+        console.error('Fallback also failed:', fallbackErr);
+        setScanning(false);
+        isProcessingRef.current = false;
+        alert('Tidak dapat mengakses kamera. Pastikan izin kamera diberikan dan tidak ada aplikasi lain yang menggunakan kamera.');
+      }
+    }
   };
 
   const switchCamera = async () => {
@@ -993,7 +1043,7 @@ function BarcodeScanner({ onScan, onScanComplete }: { onScan: (result: string) =
     
     // Restart scanning if it was active
     if (wasScanning) {
-      setTimeout(() => startScan(), 300);
+      setTimeout(() => startScan(), 500);
     }
   };
 
@@ -1008,6 +1058,7 @@ function BarcodeScanner({ onScan, onScanComplete }: { onScan: (result: string) =
         } catch (err) {
           console.error('Cleanup error:', err);
         }
+        scannerRef.current = null;
       }
     };
   }, []);
