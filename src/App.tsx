@@ -1606,10 +1606,15 @@ function RekapHarianPage() {
   const [showForm, setShowForm] = useState(false);
   const [editItem, setEditItem] = useState<DailyActivity | null>(null);
   const [form, setForm] = useState({ pegawaiId: '', aktivitas: '', waktu: '' });
+  const [showEditAbsen, setShowEditAbsen] = useState(false);
+  const [editAbsenData, setEditAbsenData] = useState<AbsensiRecord | null>(null);
   const pegawai = store.getPegawai();
   const absensi = store.getAbsensi();
 
-  const refresh = () => setActivities(store.getActivities());
+  const refresh = () => {
+    setActivities(store.getActivities());
+    window.location.reload();
+  };
 
   const todayAbsensi = absensi.filter(a => a.tanggal === selectedDate);
   const todayActivities = activities.filter(a => a.tanggal === selectedDate);
@@ -1639,6 +1644,25 @@ function RekapHarianPage() {
       store.deleteAbsensi(id);
       window.location.reload();
     }
+  };
+
+  const handleEditAbsen = (absen: AbsensiRecord) => {
+    setEditAbsenData(absen);
+    setShowEditAbsen(true);
+  };
+
+  const handleSaveEditAbsen = () => {
+    if (editAbsenData) {
+      store.updateAbsensi(editAbsenData);
+      setShowEditAbsen(false);
+      setEditAbsenData(null);
+      refresh();
+    }
+  };
+
+  const handleCloseEditAbsen = () => {
+    setShowEditAbsen(false);
+    setEditAbsenData(null);
   };
 
   return (
@@ -1755,9 +1779,22 @@ function RekapHarianPage() {
                     <td className="px-4 py-3 text-sm text-center text-gray-600">{absen?.keteranganIzin || '-'}</td>
                     <td className="px-4 py-3 text-center">
                       {hasAbsen && (
-                        <button onClick={() => handleDeleteAbsensi(absen.id)} className="px-2 py-1 bg-red-100 text-red-700 rounded text-xs hover:bg-red-200">
-                          🗑️
-                        </button>
+                        <div className="flex items-center justify-center gap-1">
+                          <button 
+                            onClick={() => handleEditAbsen(absen)} 
+                            className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs hover:bg-blue-200"
+                            title="Edit Absensi"
+                          >
+                            ✏️
+                          </button>
+                          <button 
+                            onClick={() => handleDeleteAbsensi(absen.id)} 
+                            className="px-2 py-1 bg-red-100 text-red-700 rounded text-xs hover:bg-red-200"
+                            title="Hapus Absensi"
+                          >
+                            🗑️
+                          </button>
+                        </div>
                       )}
                     </td>
                   </tr>
@@ -1813,6 +1850,144 @@ function RekapHarianPage() {
           </table>
         </div>
       </div>
+
+      {/* Modal Edit Absensi */}
+      {showEditAbsen && editAbsenData && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-3xl shadow-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl flex items-center justify-center"
+                     style={{ background: 'linear-gradient(135deg, #667eea, #764ba2)' }}>
+                  <span className="text-2xl">✏️</span>
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-gray-800">Edit Data Absensi</h3>
+                  <p className="text-sm text-gray-500">
+                    {pegawai.find(p => p.id === editAbsenData.pegawaiId)?.nama || '-'} - {format(parseISO(editAbsenData.tanggal), 'dd MMMM yyyy', { locale: idLocale })}
+                  </p>
+                </div>
+              </div>
+              <button onClick={handleCloseEditAbsen} className="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+            </div>
+
+            <div className="space-y-4">
+              {/* Waktu Datang */}
+              <div>
+                <label className="block text-xs font-semibold text-green-600 mb-2 uppercase tracking-wider">🌅 Waktu Datang</label>
+                <input
+                  type="time"
+                  value={editAbsenData.datang || ''}
+                  onChange={e => setEditAbsenData({ ...editAbsenData, datang: e.target.value || undefined })}
+                  className="w-full px-4 py-2.5 border-2 border-green-200 rounded-xl focus:ring-2 focus:ring-green-400 focus:border-transparent"
+                />
+              </div>
+
+              {/* Izin Keluar */}
+              <div>
+                <label className="block text-xs font-semibold text-yellow-600 mb-2 uppercase tracking-wider">🚶 Izin Keluar</label>
+                <input
+                  type="time"
+                  value={editAbsenData.izinKeluar || ''}
+                  onChange={e => setEditAbsenData({ ...editAbsenData, izinKeluar: e.target.value || undefined })}
+                  className="w-full px-4 py-2.5 border-2 border-yellow-200 rounded-xl focus:ring-2 focus:ring-yellow-400 focus:border-transparent"
+                />
+              </div>
+
+              {/* Izin Masuk */}
+              <div>
+                <label className="block text-xs font-semibold text-purple-600 mb-2 uppercase tracking-wider">🏠 Izin Masuk</label>
+                <input
+                  type="time"
+                  value={editAbsenData.izinMasuk || ''}
+                  onChange={e => setEditAbsenData({ ...editAbsenData, izinMasuk: e.target.value || undefined })}
+                  className="w-full px-4 py-2.5 border-2 border-purple-200 rounded-xl focus:ring-2 focus:ring-purple-400 focus:border-transparent"
+                />
+              </div>
+
+              {/* Waktu Pulang */}
+              <div>
+                <label className="block text-xs font-semibold text-blue-600 mb-2 uppercase tracking-wider">🌆 Waktu Pulang</label>
+                <input
+                  type="time"
+                  value={editAbsenData.pulang || ''}
+                  onChange={e => setEditAbsenData({ ...editAbsenData, pulang: e.target.value || undefined })}
+                  className="w-full px-4 py-2.5 border-2 border-blue-200 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                />
+              </div>
+
+              {/* Sakit (S) */}
+              <div className="p-4 rounded-xl bg-orange-50 border-2 border-orange-200">
+                <label className="block text-xs font-semibold text-orange-600 mb-2 uppercase tracking-wider">🤒 Sakit (S)</label>
+                <input
+                  type="time"
+                  value={editAbsenData.sakit || ''}
+                  onChange={e => setEditAbsenData({ ...editAbsenData, sakit: e.target.value || undefined, status: e.target.value ? 'sakit' : 'hadir' })}
+                  className="w-full px-4 py-2.5 border-2 border-orange-200 rounded-xl focus:ring-2 focus:ring-orange-400 focus:border-transparent bg-white"
+                />
+              </div>
+
+              {/* Tanpa Keterangan (TK) */}
+              <div className="p-4 rounded-xl bg-red-50 border-2 border-red-200">
+                <label className="block text-xs font-semibold text-red-600 mb-2 uppercase tracking-wider">❌ Tanpa Keterangan (TK)</label>
+                <input
+                  type="time"
+                  value={editAbsenData.tanpaKeterangan || ''}
+                  onChange={e => setEditAbsenData({ ...editAbsenData, tanpaKeterangan: e.target.value || undefined, status: e.target.value ? 'alpha' : 'hadir' })}
+                  className="w-full px-4 py-2.5 border-2 border-red-200 rounded-xl focus:ring-2 focus:ring-red-400 focus:border-transparent bg-white"
+                />
+              </div>
+
+              {/* Dinas Luar (DL) */}
+              <div className="p-4 rounded-xl bg-indigo-50 border-2 border-indigo-200">
+                <label className="block text-xs font-semibold text-indigo-600 mb-2 uppercase tracking-wider">🚗 Dinas Luar (DL)</label>
+                <input
+                  type="time"
+                  value={editAbsenData.dinasLuar || ''}
+                  onChange={e => setEditAbsenData({ ...editAbsenData, dinasLuar: e.target.value || undefined })}
+                  className="w-full px-4 py-2.5 border-2 border-indigo-200 rounded-xl focus:ring-2 focus:ring-indigo-400 focus:border-transparent bg-white"
+                />
+              </div>
+
+              {/* Keterangan */}
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wider">📝 Keterangan</label>
+                <textarea
+                  value={editAbsenData.keteranganIzin || ''}
+                  onChange={e => setEditAbsenData({ ...editAbsenData, keteranganIzin: e.target.value || undefined })}
+                  className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-gray-400 focus:border-transparent"
+                  placeholder="Masukkan keterangan..."
+                  rows={3}
+                />
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={handleSaveEditAbsen}
+                className="btn-futuristic flex-1 py-3 rounded-xl font-bold text-white tracking-wider uppercase text-sm transition-all hover:scale-[1.02] active:scale-95"
+                style={{
+                  background: 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)',
+                  boxShadow: '0 10px 25px rgba(56, 239, 125, 0.4)',
+                }}
+              >
+                💾 Simpan Perubahan
+              </button>
+              <button
+                onClick={handleCloseEditAbsen}
+                className="btn-futuristic flex-1 py-3 rounded-xl font-bold text-white tracking-wider uppercase text-sm transition-all hover:scale-[1.02] active:scale-95"
+                style={{
+                  background: 'linear-gradient(135deg, #6b7280 0%, #9ca3af 100%)',
+                  boxShadow: '0 10px 25px rgba(107, 114, 128, 0.4)',
+                }}
+              >
+                ❌ Batal
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
