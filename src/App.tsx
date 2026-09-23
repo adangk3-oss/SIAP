@@ -150,7 +150,17 @@ function LoginPage({ onLogin }: { onLogin: (u: string, p: string) => boolean }) 
                    style={{ boxShadow: '0 0 10px rgba(74, 222, 128, 0.8)' }} />
             </div>
             <h1 className="text-2xl font-black text-white neon-text tracking-wide">{settings.identitasSekolah.nama || 'SMP NEGERI 61'}</h1>
-            <h2 className="text-lg font-bold text-purple-300 tracking-widest">BANDUNG</h2>
+            <h2 
+              className="text-3xl text-purple-200 italic"
+              style={{ 
+                fontFamily: "'Brush Script MT', 'Segoe Script', 'Lucida Handwriting', cursive",
+                fontWeight: 'bold',
+                textShadow: '0 0 15px rgba(168, 85, 247, 0.6), 0 0 30px rgba(168, 85, 247, 0.3)',
+                letterSpacing: '0.05em'
+              }}
+            >
+              Rancage
+            </h2>
             <div className="mt-3 inline-flex items-center gap-2 px-4 py-1.5 rounded-full glass">
               <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
               <span className="text-xs text-purple-200 font-medium tracking-wide">SISTEM ABSENSI DIGITAL</span>
