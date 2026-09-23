@@ -1671,12 +1671,19 @@ function RekapHarianPage() {
       <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
         <div className="p-4 bg-blue-50 border-b">
           <h3 className="font-bold text-blue-800">Data Absensi - {format(parseISO(selectedDate), 'dd MMMM yyyy', { locale: idLocale })}</h3>
+          <div className="mt-2 flex gap-4 text-sm">
+            <span className="text-gray-600">Total Pegawai: <strong className="text-blue-700">{pegawai.length}</strong></span>
+            <span className="text-gray-600">Sudah Absen: <strong className="text-green-700">{todayAbsensi.length}</strong></span>
+            <span className="text-gray-600">Belum Absen: <strong className="text-red-700">{pegawai.length - todayAbsensi.length}</strong></span>
+          </div>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50">
               <tr>
+                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">No</th>
                 <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Nama</th>
+                <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700">Status</th>
                 <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700">Datang</th>
                 <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700">Izin Keluar</th>
                 <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700">Izin Masuk</th>
@@ -1686,26 +1693,42 @@ function RekapHarianPage() {
               </tr>
             </thead>
             <tbody>
-              {todayAbsensi.map(a => {
-                const p = pegawai.find(pg => pg.id === a.pegawaiId);
+              {pegawai.map((p, index) => {
+                const absen = todayAbsensi.find(a => a.pegawaiId === p.id);
+                const hasAbsen = !!absen;
+                
                 return (
-                  <tr key={a.id} className="border-t hover:bg-gray-50">
-                    <td className="px-4 py-3 text-sm font-medium">{p?.nama || '-'}</td>
-                    <td className="px-4 py-3 text-sm text-center text-green-600">{a.datang || '-'}</td>
-                    <td className="px-4 py-3 text-sm text-center text-yellow-600">{a.izinKeluar || '-'}</td>
-                    <td className="px-4 py-3 text-sm text-center text-purple-600">{a.izinMasuk || '-'}</td>
-                    <td className="px-4 py-3 text-sm text-center text-blue-600">{a.pulang || '-'}</td>
-                    <td className="px-4 py-3 text-sm text-center">{a.keteranganIzin || '-'}</td>
+                  <tr key={p.id} className={`border-t hover:bg-gray-50 ${!hasAbsen ? 'bg-red-50/30' : ''}`}>
+                    <td className="px-4 py-3 text-sm text-gray-600">{index + 1}</td>
+                    <td className="px-4 py-3 text-sm font-medium">{p.nama}</td>
                     <td className="px-4 py-3 text-center">
-                      <button onClick={() => handleDeleteAbsensi(a.id)} className="px-2 py-1 bg-red-100 text-red-700 rounded text-xs hover:bg-red-200">
-                        🗑️
-                      </button>
+                      {hasAbsen ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-green-100 text-green-700 text-xs font-semibold">
+                          ✅ Hadir
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-red-100 text-red-700 text-xs font-semibold">
+                          ❌ Belum
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-center text-green-600 font-medium">{absen?.datang || '-'}</td>
+                    <td className="px-4 py-3 text-sm text-center text-yellow-600 font-medium">{absen?.izinKeluar || '-'}</td>
+                    <td className="px-4 py-3 text-sm text-center text-purple-600 font-medium">{absen?.izinMasuk || '-'}</td>
+                    <td className="px-4 py-3 text-sm text-center text-blue-600 font-medium">{absen?.pulang || '-'}</td>
+                    <td className="px-4 py-3 text-sm text-center text-gray-600">{absen?.keteranganIzin || '-'}</td>
+                    <td className="px-4 py-3 text-center">
+                      {hasAbsen && (
+                        <button onClick={() => handleDeleteAbsensi(absen.id)} className="px-2 py-1 bg-red-100 text-red-700 rounded text-xs hover:bg-red-200">
+                          🗑️
+                        </button>
+                      )}
                     </td>
                   </tr>
                 );
               })}
-              {todayAbsensi.length === 0 && (
-                <tr><td colSpan={7} className="px-4 py-8 text-center text-gray-400">Belum ada data absensi</td></tr>
+              {pegawai.length === 0 && (
+                <tr><td colSpan={9} className="px-4 py-8 text-center text-gray-400">Belum ada data pegawai</td></tr>
               )}
             </tbody>
           </table>
