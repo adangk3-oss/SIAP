@@ -9,6 +9,7 @@ import { jsPDF } from 'jspdf';
 import QRCode from 'qrcode';
 import { FaceScanner } from './FaceScanner';
 import { Scanner } from '@yudiel/react-qr-scanner';
+import { speakAbsenSuccess } from './speech';
 
 // ============ QR CODE COMPONENT ============
 function QRCodeDisplay({ value, size = 80, level = 'H' }: { value: string; size?: number; level?: 'L' | 'M' | 'Q' | 'H' }) {
@@ -502,6 +503,7 @@ function AbsenPage() {
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState<'success' | 'error'>('success');
   const [lastScannedPegawai, setLastScannedPegawai] = useState<Pegawai | null>(null);
+  const [audioEnabled, setAudioEnabled] = useState(true);
   const pegawai = store.getPegawai();
   const settings = store.getSettings();
 
@@ -553,7 +555,12 @@ function AbsenPage() {
     }
     setManualId('');
     setKeterangan('');
-  }, [absenType, keterangan, pegawai]);
+
+    // Panggil audio ucapan untuk pengumuman absensi berhasil (jika diaktifkan)
+    if (p && audioEnabled) {
+      speakAbsenSuccess(p.nama);
+    }
+  }, [absenType, keterangan, pegawai, audioEnabled]);
 
   const handleManualSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -583,15 +590,34 @@ function AbsenPage() {
 
   return (
     <div className="space-y-6 relative">
-      <div className="flex items-center gap-3">
-        <div className="w-12 h-12 rounded-2xl flex items-center justify-center"
-             style={{ background: 'linear-gradient(135deg, #11998e, #38ef7d)', boxShadow: '0 8px 20px rgba(56, 239, 125, 0.3)' }}>
-          <span className="text-2xl">✅</span>
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-2xl flex items-center justify-center"
+               style={{ background: 'linear-gradient(135deg, #11998e, #38ef7d)', boxShadow: '0 8px 20px rgba(56, 239, 125, 0.3)' }}>
+            <span className="text-2xl">✅</span>
+          </div>
+          <div>
+            <h2 className="text-2xl font-black text-gray-800">Absensi Pegawai</h2>
+            <p className="text-sm text-gray-500">Catat kehadiran pegawai dengan mudah</p>
+          </div>
         </div>
-        <div>
-          <h2 className="text-2xl font-black text-gray-800">Absensi Pegawai</h2>
-          <p className="text-sm text-gray-500">Catat kehadiran pegawai dengan mudah</p>
-        </div>
+        
+        {/* Audio Toggle */}
+        <button
+          onClick={() => setAudioEnabled(!audioEnabled)}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-sm transition-all hover:scale-105 ${
+            audioEnabled 
+              ? 'text-white shadow-lg' 
+              : 'text-gray-600 bg-gray-100 hover:bg-gray-200'
+          }`}
+          style={audioEnabled 
+            ? { background: 'linear-gradient(135deg, #667eea, #764ba2)', boxShadow: '0 4px 15px rgba(102, 126, 234, 0.3)' }
+            : {}}
+          title={audioEnabled ? 'Audio ucapan aktif' : 'Audio ucapan nonaktif'}
+        >
+          <span className="text-lg">{audioEnabled ? '🔊' : '🔇'}</span>
+          <span className="hidden sm:inline">{audioEnabled ? 'Audio ON' : 'Audio OFF'}</span>
+        </button>
       </div>
       
       {message && lastScannedPegawai && messageType === 'success' && (
