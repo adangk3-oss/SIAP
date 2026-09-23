@@ -25,6 +25,9 @@ export interface AbsensiRecord {
   izinMasuk?: string;
   keteranganIzin?: string;
   status: 'hadir' | 'izin' | 'sakit' | 'alpha';
+  sakit?: string; // Waktu sakit (S)
+  tanpaKeterangan?: string; // Tanpa keterangan (TK)
+  dinasLuar?: string; // Dinas luar (DL)
 }
 
 export interface Settings {

@@ -498,7 +498,7 @@ function Dashboard({ currentUser, setPage }: { currentUser: User; setPage: (p: s
 function AbsenPage() {
   const [inputMode, setInputMode] = useState<'manual' | 'qr' | 'face'>('manual');
   const [manualId, setManualId] = useState('');
-  const [absenType, setAbsenType] = useState<'datang' | 'pulang' | 'izinKeluar' | 'izinMasuk'>('datang');
+  const [absenType, setAbsenType] = useState<'datang' | 'pulang' | 'izinKeluar' | 'izinMasuk' | 'sakit' | 'tanpaKeterangan' | 'dinasLuar'>('datang');
   const [keterangan, setKeterangan] = useState('');
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState<'success' | 'error'>('success');
@@ -545,6 +545,22 @@ function AbsenPage() {
     } else if (absenType === 'izinMasuk') {
       record.izinMasuk = now;
       setMessage(`Izin Masuk berhasil dicatat`);
+      setMessageType('success');
+    } else if (absenType === 'sakit') {
+      record.sakit = now;
+      record.status = 'sakit';
+      record.keteranganIzin = keterangan;
+      setMessage(`Sakit (S) berhasil dicatat`);
+      setMessageType('success');
+    } else if (absenType === 'tanpaKeterangan') {
+      record.tanpaKeterangan = now;
+      record.status = 'alpha';
+      setMessage(`Tanpa Keterangan (TK) berhasil dicatat`);
+      setMessageType('success');
+    } else if (absenType === 'dinasLuar') {
+      record.dinasLuar = now;
+      record.keteranganIzin = keterangan;
+      setMessage(`Dinas Luar (DL) berhasil dicatat`);
       setMessageType('success');
     }
 
@@ -661,6 +677,9 @@ function AbsenPage() {
                       {absenType === 'pulang' && '🌆 Pulang'}
                       {absenType === 'izinKeluar' && '🚶 Izin Keluar'}
                       {absenType === 'izinMasuk' && '🏠 Izin Masuk'}
+                      {absenType === 'sakit' && '🤒 Sakit (S)'}
+                      {absenType === 'tanpaKeterangan' && '❌ Tanpa Keterangan (TK)'}
+                      {absenType === 'dinasLuar' && '🚗 Dinas Luar (DL)'}
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
@@ -715,6 +734,9 @@ function AbsenPage() {
               { value: 'pulang', label: 'Pulang', icon: '🌆', gradient: 'linear-gradient(135deg, #667eea20, #764ba220)', active: 'linear-gradient(135deg, #667eea, #764ba2)' },
               { value: 'izinKeluar', label: 'Izin Keluar', icon: '🚶', gradient: 'linear-gradient(135deg, #f093fb20, #f5576c20)', active: 'linear-gradient(135deg, #f093fb, #f5576c)' },
               { value: 'izinMasuk', label: 'Izin Masuk', icon: '🏠', gradient: 'linear-gradient(135deg, #fa709a20, #fee14020)', active: 'linear-gradient(135deg, #fa709a, #fee140)' },
+              { value: 'sakit', label: 'Sakit (S)', icon: '🤒', gradient: 'linear-gradient(135deg, #fb923c20, #f97316 20)', active: 'linear-gradient(135deg, #fb923c, #f97316)' },
+              { value: 'tanpaKeterangan', label: 'Tanpa Ket. (TK)', icon: '❌', gradient: 'linear-gradient(135deg, #ef444420, #dc262620)', active: 'linear-gradient(135deg, #ef4444, #dc2626)' },
+              { value: 'dinasLuar', label: 'Dinas Luar (DL)', icon: '🚗', gradient: 'linear-gradient(135deg, #6366f120, #4f46e520)', active: 'linear-gradient(135deg, #6366f1, #4f46e5)' },
             ].map(type => (
               <button
                 key={type.value}
@@ -734,14 +756,22 @@ function AbsenPage() {
             ))}
           </div>
 
-          {(absenType === 'izinKeluar') && (
+          {(absenType === 'izinKeluar' || absenType === 'sakit' || absenType === 'dinasLuar') && (
             <div className="mt-5 animate-fade-in-up">
-              <label className="block text-xs font-semibold text-purple-600 mb-2 uppercase tracking-wider">Keterangan Izin</label>
+              <label className="block text-xs font-semibold text-purple-600 mb-2 uppercase tracking-wider">
+                {absenType === 'izinKeluar' && 'Keterangan Izin'}
+                {absenType === 'sakit' && 'Keterangan Sakit'}
+                {absenType === 'dinasLuar' && 'Keterangan Dinas Luar'}
+              </label>
               <textarea
                 value={keterangan}
                 onChange={e => setKeterangan(e.target.value)}
                 className="w-full px-4 py-3 border-2 border-purple-200 rounded-xl focus:ring-2 focus:ring-purple-400 focus:border-transparent transition-all"
-                placeholder="Masukkan keterangan izin keluar..."
+                placeholder={
+                  absenType === 'izinKeluar' ? 'Masukkan keterangan izin keluar...' :
+                  absenType === 'sakit' ? 'Masukkan keterangan sakit...' :
+                  'Masukkan keterangan dinas luar...'
+                }
                 rows={3}
               />
             </div>
@@ -1688,6 +1718,9 @@ function RekapHarianPage() {
                 <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700">Izin Keluar</th>
                 <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700">Izin Masuk</th>
                 <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700">Pulang</th>
+                <th className="px-4 py-3 text-center text-sm font-semibold text-orange-700">Sakit (S)</th>
+                <th className="px-4 py-3 text-center text-sm font-semibold text-red-700">Tanpa Keterangan (TK)</th>
+                <th className="px-4 py-3 text-center text-sm font-semibold text-indigo-700">Dinas Luar (DL)</th>
                 <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700">Keterangan</th>
                 <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700">Aksi</th>
               </tr>
@@ -1716,6 +1749,9 @@ function RekapHarianPage() {
                     <td className="px-4 py-3 text-sm text-center text-yellow-600 font-medium">{absen?.izinKeluar || '-'}</td>
                     <td className="px-4 py-3 text-sm text-center text-purple-600 font-medium">{absen?.izinMasuk || '-'}</td>
                     <td className="px-4 py-3 text-sm text-center text-blue-600 font-medium">{absen?.pulang || '-'}</td>
+                    <td className="px-4 py-3 text-sm text-center text-orange-600 font-medium">{absen?.sakit || '-'}</td>
+                    <td className="px-4 py-3 text-sm text-center text-red-600 font-medium">{absen?.tanpaKeterangan || '-'}</td>
+                    <td className="px-4 py-3 text-sm text-center text-indigo-600 font-medium">{absen?.dinasLuar || '-'}</td>
                     <td className="px-4 py-3 text-sm text-center text-gray-600">{absen?.keteranganIzin || '-'}</td>
                     <td className="px-4 py-3 text-center">
                       {hasAbsen && (
@@ -1728,7 +1764,7 @@ function RekapHarianPage() {
                 );
               })}
               {pegawai.length === 0 && (
-                <tr><td colSpan={9} className="px-4 py-8 text-center text-gray-400">Belum ada data pegawai</td></tr>
+                <tr><td colSpan={12} className="px-4 py-8 text-center text-gray-400">Belum ada data pegawai</td></tr>
               )}
             </tbody>
           </table>
