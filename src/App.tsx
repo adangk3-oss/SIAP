@@ -8,6 +8,7 @@ import * as XLSX from 'xlsx';
 import { jsPDF } from 'jspdf';
 import QRCode from 'qrcode';
 import { FaceScanner } from './FaceScanner';
+import { Scanner } from '@yudiel/react-qr-scanner';
 
 // ============ QR CODE COMPONENT ============
 function QRCodeDisplay({ value, size = 80, level = 'H' }: { value: string; size?: number; level?: 'L' | 'M' | 'Q' | 'H' }) {
@@ -871,23 +872,18 @@ function FaceScanAbsen({
 
 // ============ BARCODE SCANNER ============
 function BarcodeScanner({ onScan, onScanComplete }: { onScan: (result: string) => void; onScanComplete?: () => void }) {
-  const [scanning, setScanning] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [cameraType, setCameraType] = useState<'environment' | 'user'>('environment'); // 'environment' = belakang, 'user' = depan
+  const [cameraType, setCameraType] = useState<'environment' | 'user'>('environment');
   const [availableCameras, setAvailableCameras] = useState<MediaDeviceInfo[]>([]);
-  const scannerRef = useRef<any>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const isProcessingRef = useRef(false); // Prevent multiple scans
+  const [error, setError] = useState<string>('');
+  const isProcessingRef = useRef(false);
   const onScanRef = useRef(onScan);
   const onScanCompleteRef = useRef(onScanComplete);
-  const cameraTypeRef = useRef(cameraType);
 
   // Keep refs updated
   useEffect(() => {
     onScanRef.current = onScan;
     onScanCompleteRef.current = onScanComplete;
-    cameraTypeRef.current = cameraType;
-  }, [onScan, onScanComplete, cameraType]);
+  }, [onScan, onScanComplete]);
 
   // Get available cameras
   useEffect(() => {
@@ -903,201 +899,41 @@ function BarcodeScanner({ onScan, onScanComplete }: { onScan: (result: string) =
     getCameras();
   }, []);
 
-  const stopScan = async () => {
-    if (scannerRef.current) {
-      try {
-        await scannerRef.current.stop();
-        scannerRef.current.clear();
-      } catch (err) {
-        console.error('Error stopping scanner:', err);
-      }
-      scannerRef.current = null;
-    }
-    if (containerRef.current) {
-      containerRef.current.innerHTML = '';
-    }
-    setScanning(false);
-    setLoading(false);
-    isProcessingRef.current = false;
-  };
-
-  const startScan = async () => {
-    if (scanning || isProcessingRef.current) return;
+  const handleScan = (detectedCodes: any[]) => {
+    if (isProcessingRef.current || !detectedCodes || detectedCodes.length === 0) return;
+    isProcessingRef.current = true;
     
-    setLoading(true);
-    setScanning(true);
-    isProcessingRef.current = false;
+    // Get the first detected QR code
+    const decodedText = detectedCodes[0]?.rawValue || '';
     
-    try {
-      const { Html5Qrcode } = await import('html5-qrcode');
+    if (decodedText) {
+      onScanRef.current(decodedText);
       
-      // Create a unique ID for this scanner instance
-      const scannerId = `barcode-reader-${Date.now()}`;
-      
-      // Create a container div for the scanner
-      if (containerRef.current) {
-        // Clear any existing content
-        containerRef.current.innerHTML = '';
-        
-        const scannerDiv = document.createElement('div');
-        scannerDiv.id = scannerId;
-        scannerDiv.style.width = '100%';
-        scannerDiv.style.height = '100%';
-        containerRef.current.appendChild(scannerDiv);
-        
-        scannerRef.current = new Html5Qrcode(scannerId);
-        
-        // Use the selected camera type with fallback
-        let cameraConfig: any;
-        try {
-          cameraConfig = cameraTypeRef.current === 'environment' 
-            ? { facingMode: { exact: 'environment' } }
-            : { facingMode: { exact: 'user' } };
-        } catch (e) {
-          cameraConfig = { facingMode: cameraTypeRef.current };
-        }
-        
-        await scannerRef.current.start(
-          cameraConfig,
-          { 
-            fps: 10, 
-            qrbox: { width: 250, height: 250 },
-            aspectRatio: 1.0
-          },
-          (decodedText: string) => {
-            // Prevent multiple scans
-            if (isProcessingRef.current) return;
-            isProcessingRef.current = true;
-            
-            // Call onScan first
-            onScanRef.current(decodedText);
-            
-            // Stop scanner and call completion callback
-            stopScan().then(() => {
-              if (onScanCompleteRef.current) {
-                setTimeout(() => {
-                  onScanCompleteRef.current!();
-                }, 100);
-              }
-            });
-          },
-          (errorMessage: string) => {
-            // Ignore scan errors (normal when no QR code in frame)
-          }
-        );
-        
-        setLoading(false);
-      }
-    } catch (err) {
-      console.error('Error starting scanner:', err);
-      setScanning(false);
-      isProcessingRef.current = false;
-      
-      // Fallback: try without exact facing mode
-      try {
-        const { Html5Qrcode } = await import('html5-qrcode');
-        const scannerId = `barcode-reader-fallback-${Date.now()}`;
-        
-        if (containerRef.current) {
-          containerRef.current.innerHTML = '';
-          
-          const scannerDiv = document.createElement('div');
-          scannerDiv.id = scannerId;
-          scannerDiv.style.width = '100%';
-          scannerDiv.style.height = '100%';
-          containerRef.current.appendChild(scannerDiv);
-          
-          scannerRef.current = new Html5Qrcode(scannerId);
-          await scannerRef.current.start(
-            { facingMode: cameraTypeRef.current },
-            { 
-              fps: 10, 
-              qrbox: { width: 250, height: 250 },
-              aspectRatio: 1.0
-            },
-            (decodedText: string) => {
-              if (isProcessingRef.current) return;
-              isProcessingRef.current = true;
-              
-              onScanRef.current(decodedText);
-              
-              stopScan().then(() => {
-                if (onScanCompleteRef.current) {
-                  setTimeout(() => {
-                    onScanCompleteRef.current!();
-                  }, 100);
-                }
-              });
-            },
-            () => {}
-          );
-          
-          setLoading(false);
-        }
-      } catch (fallbackErr) {
-        console.error('Fallback also failed:', fallbackErr);
-        setScanning(false);
-        setLoading(false);
-        isProcessingRef.current = false;
-        alert('Tidak dapat mengakses kamera. Pastikan izin kamera diberikan dan tidak ada aplikasi lain yang menggunakan kamera.');
+      // Call completion callback
+      if (onScanCompleteRef.current) {
+        setTimeout(() => {
+          onScanCompleteRef.current!();
+        }, 100);
       }
     }
   };
 
-  const switchCamera = async () => {
-    const wasScanning = scanning;
-    if (wasScanning) {
-      await stopScan();
-    }
+  const handleError = (err: any) => {
+    console.error('Scanner error:', err);
+    const errorMessage = err?.message || 'Tidak dapat mengakses kamera. Pastikan izin kamera diberikan.';
+    setError(errorMessage);
+  };
+
+  const switchCamera = () => {
     setCameraType(prev => prev === 'environment' ? 'user' : 'environment');
-    
-    // Restart scanning if it was active
-    if (wasScanning) {
-      setTimeout(() => startScan(), 500);
-    }
   };
-
-  // Auto-start camera when component mounts
-  useEffect(() => {
-    // Wait for container to be ready
-    const timer = setTimeout(() => {
-      startScan();
-    }, 100);
-    
-    return () => {
-      clearTimeout(timer);
-    };
-  }, []);
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (scannerRef.current) {
-        try {
-          scannerRef.current.stop().then(() => {
-            scannerRef.current.clear();
-          }).catch(() => {});
-        } catch (err) {
-          console.error('Cleanup error:', err);
-        }
-        scannerRef.current = null;
-      }
-    };
-  }, []);
 
   return (
     <div className="space-y-4">
       {/* Camera Selection */}
       <div className="flex gap-2">
         <button
-          onClick={() => {
-            if (cameraType !== 'environment') {
-              setCameraType('environment');
-              if (scanning) {
-                stopScan().then(() => setTimeout(() => startScan(), 300));
-              }
-            }
-          }}
+          onClick={() => setCameraType('environment')}
           className={`flex-1 py-3 px-4 rounded-xl font-semibold text-sm transition-all ${
             cameraType === 'environment'
               ? 'text-white shadow-lg'
@@ -1110,14 +946,7 @@ function BarcodeScanner({ onScan, onScanComplete }: { onScan: (result: string) =
           📷 Kamera Belakang
         </button>
         <button
-          onClick={() => {
-            if (cameraType !== 'user') {
-              setCameraType('user');
-              if (scanning) {
-                stopScan().then(() => setTimeout(() => startScan(), 300));
-              }
-            }
-          }}
+          onClick={() => setCameraType('user')}
           className={`flex-1 py-3 px-4 rounded-xl font-semibold text-sm transition-all ${
             cameraType === 'user'
               ? 'text-white shadow-lg'
@@ -1140,36 +969,57 @@ function BarcodeScanner({ onScan, onScanComplete }: { onScan: (result: string) =
 
       {/* Scanner Container */}
       <div 
-        ref={containerRef}
-        className="w-full rounded-2xl overflow-hidden min-h-[250px] flex items-center justify-center relative"
-        style={{ background: 'linear-gradient(135deg, #0f0c29, #302b63, #24243e)' }}
+        className="w-full rounded-2xl overflow-hidden relative"
+        style={{ 
+          background: 'linear-gradient(135deg, #0f0c29, #302b63, #24243e)',
+          minHeight: '300px'
+        }}
       >
-        {loading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/70 backdrop-blur-sm z-10">
-            <div className="text-center text-white">
-              <div className="w-16 h-16 border-4 border-purple-400 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-              <p className="text-sm font-medium">Mengaktifkan kamera...</p>
-              <p className="text-xs text-purple-300 mt-1">Mohon izinkan akses kamera</p>
+        {error ? (
+          <div className="flex items-center justify-center h-[300px] text-center p-4">
+            <div className="text-white">
+              <div className="text-5xl mb-3">⚠️</div>
+              <p className="text-sm font-medium">{error}</p>
+              <button
+                onClick={() => setError('')}
+                className="mt-3 px-4 py-2 bg-purple-600 rounded-lg text-sm hover:bg-purple-700"
+              >
+                Coba Lagi
+              </button>
             </div>
           </div>
-        )}
-        {!scanning && !loading && (
-          <div className="text-center text-purple-300">
-            <div className="text-5xl mb-3 animate-float">
-              {cameraType === 'environment' ? '📷' : '🤳'}
-            </div>
-            <p className="text-sm font-medium">
-              {cameraType === 'environment' ? 'Kamera Belakang' : 'Kamera Depan'}
-            </p>
-            <p className="text-xs text-purple-400/60 mt-1">Kamera akan aktif otomatis</p>
-          </div>
-        )}
-        {scanning && !loading && (
+        ) : (
           <>
+            <Scanner
+              onScan={handleScan}
+              onError={handleError}
+              constraints={{
+                facingMode: cameraType,
+                width: { ideal: 640 },
+                height: { ideal: 480 }
+              }}
+              styles={{
+                container: { 
+                  width: '100%', 
+                  height: '300px'
+                },
+                video: {
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover'
+                }
+              }}
+              scanDelay={500}
+              sound={false}
+            />
+            
+            {/* Scan overlay */}
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
-              <div className="w-24 h-24 border-4 border-green-400 rounded-2xl animate-pulse"
+              <div className="w-48 h-48 border-4 border-green-400 rounded-2xl"
                    style={{ boxShadow: '0 0 30px rgba(74, 222, 128, 0.5)' }} />
             </div>
+            
+            {/* Camera indicator */}
             <div className="absolute top-3 right-3 px-3 py-1.5 rounded-full glass text-white text-xs font-semibold z-10">
               {cameraType === 'environment' ? '📷 Belakang' : '🤳 Depan'}
             </div>
@@ -1179,47 +1029,16 @@ function BarcodeScanner({ onScan, onScanComplete }: { onScan: (result: string) =
 
       {/* Action Buttons */}
       <div className="flex gap-2">
-        {scanning && (
-          <>
-            <button
-              onClick={switchCamera}
-              className="btn-futuristic flex-1 py-4 rounded-xl font-bold text-white tracking-wider uppercase text-sm transition-all hover:scale-[1.02] active:scale-95"
-              style={{
-                background: 'linear-gradient(135deg, #667eea, #764ba2)',
-                boxShadow: '0 10px 25px rgba(102, 126, 234, 0.4)',
-              }}
-            >
-              🔄 Ganti Kamera
-            </button>
-            
-            <button
-              onClick={async () => {
-                await stopScan();
-                setTimeout(() => startScan(), 300);
-              }}
-              className="btn-futuristic py-4 px-6 rounded-xl font-bold text-white tracking-wider uppercase text-sm transition-all hover:scale-[1.02] active:scale-95"
-              style={{
-                background: 'linear-gradient(135deg, #f59e0b, #f97316)',
-                boxShadow: '0 10px 25px rgba(245, 158, 11, 0.4)',
-              }}
-            >
-              🔄 Restart
-            </button>
-          </>
-        )}
-        
-        {!scanning && !loading && (
-          <button
-            onClick={startScan}
-            className="btn-futuristic flex-1 py-4 rounded-xl font-bold text-white tracking-wider uppercase text-sm transition-all hover:scale-[1.02] active:scale-95"
-            style={{
-              background: 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)',
-              boxShadow: '0 10px 25px rgba(56, 239, 125, 0.4)',
-            }}
-          >
-            🔍 Aktifkan Kamera
-          </button>
-        )}
+        <button
+          onClick={switchCamera}
+          className="btn-futuristic flex-1 py-4 rounded-xl font-bold text-white tracking-wider uppercase text-sm transition-all hover:scale-[1.02] active:scale-95"
+          style={{
+            background: 'linear-gradient(135deg, #667eea, #764ba2)',
+            boxShadow: '0 10px 25px rgba(102, 126, 234, 0.4)',
+          }}
+        >
+          🔄 Ganti Kamera
+        </button>
       </div>
     </div>
   );
