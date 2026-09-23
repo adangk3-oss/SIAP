@@ -1588,6 +1588,48 @@ function RekapHarianPage() {
     window.location.reload();
   };
 
+  // Quick action untuk toggle Sakit/Dinas Luar
+  const handleQuickAction = (pegawaiId: string, action: 'sakit' | 'dinasLuar') => {
+    const today = selectedDate;
+    const now = format(new Date(), 'HH:mm');
+    const existingAbsen = absensi.find(a => a.pegawaiId === pegawaiId && a.tanggal === today);
+    
+    if (existingAbsen) {
+      // Update existing record
+      const updatedRecord = { ...existingAbsen };
+      if (action === 'sakit') {
+        updatedRecord.sakit = updatedRecord.sakit ? undefined : now;
+        if (updatedRecord.sakit) {
+          updatedRecord.status = 'sakit';
+          // Hapus data datang jika sakit
+          updatedRecord.datang = undefined;
+        }
+      } else if (action === 'dinasLuar') {
+        updatedRecord.dinasLuar = updatedRecord.dinasLuar ? undefined : now;
+        if (updatedRecord.dinasLuar) {
+          // Hapus data datang jika dinas luar
+          updatedRecord.datang = undefined;
+        }
+      }
+      store.updateAbsensi(updatedRecord);
+    } else {
+      // Create new record
+      const newRecord: AbsensiRecord = {
+        id: Date.now().toString(),
+        pegawaiId,
+        tanggal: today,
+        status: action === 'sakit' ? 'sakit' : 'hadir',
+      };
+      if (action === 'sakit') {
+        newRecord.sakit = now;
+      } else if (action === 'dinasLuar') {
+        newRecord.dinasLuar = now;
+      }
+      store.addAbsensi(newRecord);
+    }
+    refresh();
+  };
+
   const todayAbsensi = absensi.filter(a => a.tanggal === selectedDate);
   const todayActivities = activities.filter(a => a.tanggal === selectedDate);
 
@@ -1768,8 +1810,50 @@ function RekapHarianPage() {
                     <td className="px-4 py-3 text-sm text-center text-yellow-600 font-medium">{absen?.izinKeluar || '-'}</td>
                     <td className="px-4 py-3 text-sm text-center text-purple-600 font-medium">{absen?.izinMasuk || '-'}</td>
                     <td className="px-4 py-3 text-sm text-center text-blue-600 font-medium">{absen?.pulang || '-'}</td>
-                    <td className="px-4 py-3 text-sm text-center text-orange-600 font-medium">{absen?.sakit || '-'}</td>
-                    <td className="px-4 py-3 text-sm text-center text-indigo-600 font-medium">{absen?.dinasLuar || '-'}</td>
+                    <td className="px-4 py-3 text-sm text-center">
+                      {absen?.sakit ? (
+                        <div className="flex items-center justify-center gap-1">
+                          <span className="text-orange-600 font-medium">{absen.sakit}</span>
+                          <button
+                            onClick={() => handleQuickAction(p.id, 'sakit')}
+                            className="text-red-500 hover:text-red-700 hover:bg-red-100 rounded p-1 transition-colors"
+                            title="Hapus status sakit"
+                          >
+                            ✖
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => handleQuickAction(p.id, 'sakit')}
+                          className="text-gray-400 hover:text-orange-600 hover:bg-orange-50 rounded px-2 py-1 transition-colors"
+                          title="Tandai sakit"
+                        >
+                          ✖
+                        </button>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-center">
+                      {absen?.dinasLuar ? (
+                        <div className="flex items-center justify-center gap-1">
+                          <span className="text-indigo-600 font-medium">{absen.dinasLuar}</span>
+                          <button
+                            onClick={() => handleQuickAction(p.id, 'dinasLuar')}
+                            className="text-red-500 hover:text-red-700 hover:bg-red-100 rounded p-1 transition-colors"
+                            title="Hapus status dinas luar"
+                          >
+                            ✖
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => handleQuickAction(p.id, 'dinasLuar')}
+                          className="text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded px-2 py-1 transition-colors"
+                          title="Tandai dinas luar"
+                        >
+                          ✖
+                        </button>
+                      )}
+                    </td>
                     <td className="px-4 py-3 text-sm text-center text-gray-600">{absen?.keteranganIzin || '-'}</td>
                   </tr>
                 );
