@@ -12,6 +12,7 @@ export interface Pegawai {
   nip: string;
   jabatan: string;
   idAbsen: string;
+  faceDescriptor?: number[]; // Face descriptor untuk recognition
 }
 
 export interface AbsensiRecord {
@@ -24,6 +25,9 @@ export interface AbsensiRecord {
   izinMasuk?: string;
   keteranganIzin?: string;
   status: 'hadir' | 'izin' | 'sakit' | 'alpha';
+  sakit?: string; // Waktu sakit (S)
+  tanpaKeterangan?: string; // Tanpa keterangan (TK)
+  dinasLuar?: string; // Dinas luar (DL)
 }
 
 export interface Settings {
